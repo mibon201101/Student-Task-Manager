@@ -1,59 +1,82 @@
 # Student Task Manager
 
-A beginner-friendly task manager built with HTML, CSS, and vanilla JavaScript.
+A clean, responsive student task manager built with HTML, CSS, and vanilla JavaScript. The app helps students create accounts, manage personal tasks, track due dates, filter work, and stay aware of upcoming deadlines.
 
 ## Features
 
-- Add new tasks
-- Delete tasks
-- Mark tasks as completed
-- Filter tasks by All, Pending, and Completed
-- Save tasks in `localStorage`
-- Responsive layout for desktop and mobile screens
+- Signup with name, email, and password
+- Login using registered email and password
+- User-specific task storage
+- Dashboard welcome message with username
+- Add, edit, delete, and complete tasks
+- Priority, category, and due date
+- Countdown timer and deadline warning
+- Browser notification for deadline alerts
+- Filter tasks by status and category
+- `localStorage`-based data persistence
+- Responsive UI
+- Sticky footer
+
+## Technologies Used
+
+- HTML5
+- CSS3
+- Vanilla JavaScript
+- Browser `localStorage`
+- Browser Notification API
 
 ## File Structure
 
 ```text
 student-task-manager/
-├── index.html
-├── style.css
-├── script.js
-└── README.md
+├── index.html              # Redirects to login.html
+├── login.html              # Login page
+├── signup.html             # Signup page
+├── dashboard.html          # Main task manager dashboard
+├── style.css               # Styling for all pages
+├── script.js               # Authentication and task manager logic
+├── README.md               # Project documentation
+├── TECHNICAL_NOTES.md      # Technical explanation and interview notes
+└── .gitignore
 ```
 
-## How to Run
+## Screenshots
 
-Open `index.html` in your browser.
+Add screenshots of the login page, signup page, and dashboard here.
 
-## How It Works
+Example:
 
-The app stores tasks in an array of objects. Each task looks like this:
-
-```js
-{
-  id: 123456789,
-  text: "Finish math homework",
-  completed: false
-}
+```text
+screenshots/login.png
+screenshots/signup.png
+screenshots/dashboard.png
 ```
 
-When the user adds, deletes, or completes a task, the app updates the array, saves it to `localStorage`, and renders the list again.
+## How to Run the Project
 
-## Main JavaScript Logic
+1. Download or clone this repository.
+2. Open `index.html` or `login.html` in the browser.
+3. Click Sign up to create an account.
+4. Login using the created email and password.
+5. After successful login, the user is redirected to `dashboard.html`.
 
-- `loadTasks()` reads saved tasks from `localStorage`.
-- `saveTasks()` saves the current task array to `localStorage`.
-- `renderTasks()` updates the task list shown on the page.
-- `getFilteredTasks()` returns tasks based on the selected filter.
-- The form `submit` event adds a new task.
-- The task list `click` event deletes tasks.
-- The task list `change` event updates completed status from the checkbox.
+No backend, database, framework, or external library is required.
 
-## Interview Talking Points
+## Live Demo
 
-- The app uses DOM selection with `querySelector` and `querySelectorAll`.
-- It uses event listeners to respond to user actions.
-- It uses an array of objects to store task data.
-- It uses `map`, `filter`, and `forEach` for common array operations.
-- It uses `localStorage` so tasks remain after refreshing the browser.
-- It uses rendering to keep the UI in sync with the data.
+Add your live project link here after deploying the site.
+
+Example:
+
+```text
+https://your-username.github.io/student-task-manager/
+```
+
+## Future Improvements
+
+- Add password confirmation during signup
+- Add task notes or descriptions
+- Add recurring tasks
+- Add light and dark theme support
+- Add export/import for task data
+- Improve accessibility with more keyboard-friendly controls
