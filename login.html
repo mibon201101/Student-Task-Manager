@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Student Task Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page-content">
+    <section class="login-view" aria-labelledby="login-title">
+      <form id="login-form" class="login-card">
+        <p class="eyebrow">Student Planner</p>
+        <h1 id="login-title">Log in to your dashboard</h1>
+        <p class="login-intro">Sign in with your saved account to manage tasks and deadlines.</p>
+
+        <label for="email-input">Email</label>
+        <input
+          id="email-input"
+          type="email"
+          placeholder="you@example.com"
+          autocomplete="email"
+        >
+
+        <label for="password-input">Password</label>
+        <input
+          id="password-input"
+          type="password"
+          placeholder="Enter your password"
+          autocomplete="current-password"
+        >
+
+        <button type="submit">Login</button>
+        <p id="login-message" class="login-message" aria-live="polite"></p>
+        <p class="auth-switch">
+          Don't have an account?
+          <button id="show-signup-btn" type="button">Sign up</button>
+        </p>
+      </form>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Isfaq Hossain. All rights reserved.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

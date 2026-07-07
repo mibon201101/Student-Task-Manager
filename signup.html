@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up | Student Task Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page-content">
+    <section class="login-view" aria-labelledby="signup-title">
+      <form id="signup-form" class="login-card">
+        <p class="eyebrow">Student Planner</p>
+        <h1 id="signup-title">Create your account</h1>
+        <p class="login-intro">Save your own task list with a name, email, and password.</p>
+
+        <label for="signup-name-input">Name</label>
+        <input
+          id="signup-name-input"
+          type="text"
+          placeholder="Your name"
+          autocomplete="name"
+        >
+
+        <label for="signup-email-input">Email</label>
+        <input
+          id="signup-email-input"
+          type="email"
+          placeholder="you@example.com"
+          autocomplete="email"
+        >
+
+        <label for="signup-password-input">Password</label>
+        <input
+          id="signup-password-input"
+          type="password"
+          placeholder="At least 6 characters"
+          autocomplete="new-password"
+        >
+
+        <button type="submit">Create Account</button>
+        <p id="signup-message" class="login-message" aria-live="polite"></p>
+        <p class="auth-switch">
+          Already have an account?
+          <button id="show-login-btn" type="button">Login</button>
+        </p>
+      </form>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Isfaq Hossain. All rights reserved.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

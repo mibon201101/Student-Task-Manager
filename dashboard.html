@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Student Task Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page-content">
+    <div class="app">
+      <section class="app-header" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Student Planner</p>
+          <h1 id="page-title">Task Manager</h1>
+          <p class="intro">Keep assignments, study sessions, and reminders organized in one simple list.</p>
+        </div>
+        <div class="user-controls">
+          <p id="welcome-message">Welcome, Student</p>
+          <button id="logout-btn" class="logout-btn" type="button">Logout</button>
+        </div>
+      </section>
+
+      <section class="task-panel" aria-label="Task manager">
+        <form id="task-form" class="task-form">
+          <label for="task-input">Add a new task</label>
+          <div class="input-row">
+            <input
+              id="task-input"
+              type="text"
+              placeholder="Example: Finish math homework"
+              autocomplete="off"
+            >
+            <select id="priority-input" aria-label="Task priority">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+            <select id="category-input" aria-label="Task category">
+              <option value="assignment">Assignment</option>
+              <option value="homework">Homework</option>
+              <option value="study-session">Study Session</option>
+              <option value="project">Project</option>
+            </select>
+            <input
+              id="due-date-input"
+              type="date"
+              aria-label="Due date"
+            >
+            <button type="submit">Add Task</button>
+          </div>
+          <p id="form-message" class="form-message" aria-live="polite"></p>
+        </form>
+
+        <div class="summary-grid" aria-label="Task summary">
+          <div class="summary-item">
+            <span class="summary-label">Total</span>
+            <strong id="total-count">0</strong>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Completed</span>
+            <strong id="completed-count">0</strong>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Pending</span>
+            <strong id="pending-count">0</strong>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Overdue</span>
+            <strong id="overdue-count">0</strong>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Deadline Soon</span>
+            <strong id="deadline-soon-count">0</strong>
+          </div>
+        </div>
+
+        <div class="dashboard-tools" aria-label="Search and sort tasks">
+          <label for="task-search">
+            Search
+            <input
+              id="task-search"
+              type="search"
+              placeholder="Search title, category, or priority"
+              autocomplete="off"
+            >
+          </label>
+          <label for="task-sort">
+            Sort
+            <select id="task-sort">
+              <option value="default">Default order</option>
+              <option value="deadline">Deadline nearest first</option>
+              <option value="priority">Priority high to low</option>
+              <option value="pending">Pending first</option>
+              <option value="completed">Completed first</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="toolbar">
+          <div class="filters" aria-label="Filter tasks">
+            <button class="filter-btn active" type="button" data-filter="all" aria-pressed="true">All</button>
+            <button class="filter-btn" type="button" data-filter="pending" aria-pressed="false">Pending</button>
+            <button class="filter-btn" type="button" data-filter="completed" aria-pressed="false">Completed</button>
+          </div>
+          <label class="category-filter-label" for="category-filter">
+            Category
+            <select id="category-filter">
+              <option value="all">All Categories</option>
+              <option value="assignment">Assignment</option>
+              <option value="homework">Homework</option>
+              <option value="study-session">Study Session</option>
+              <option value="project">Project</option>
+            </select>
+          </label>
+          <p id="task-count" class="task-count">0 tasks</p>
+        </div>
+
+        <ul id="task-list" class="task-list" aria-label="Tasks"></ul>
+
+        <p id="empty-state" class="empty-state">No tasks yet. Add your first task above.</p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Isfaq Hossain. All rights reserved.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
