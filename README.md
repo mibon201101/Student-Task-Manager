@@ -42,15 +42,14 @@ student-task-manager/
 
 ## Screenshots
 
-Add screenshots of the login page, signup page, and dashboard here.
+### Login Page
+![Login Page](screenshots/login_page.png)
 
-Example:
+### Signup Page
+![Signup Page](screenshots/signup_page.png)
 
-```text
-screenshots/login.png
-screenshots/signup.png
-screenshots/dashboard.png
-```
+### Dashboard Page
+![Dashboard Page](screenshots/dashboard_page.png)
 
 ## How to Run the Project
 
