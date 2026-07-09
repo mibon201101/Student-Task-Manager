@@ -18,7 +18,10 @@
         <div class="user-controls">
           <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Dark Mode</button>
           <p id="welcome-message">Welcome, Student</p>
-          <button id="logout-btn" class="logout-btn" type="button">Logout</button>
+          <div class="dashboard-action-stack">
+            <button id="logout-btn" class="logout-btn" type="button">Logout</button>
+            <button id="statistics-btn" class="secondary-nav-btn" type="button">Statistics</button>
+          </div>
         </div>
       </section>
 
@@ -54,123 +57,6 @@
             <dd id="profile-created-date">Not available</dd>
           </div>
         </dl>
-      </section>
-
-      <section class="progress-panel" aria-labelledby="progress-title">
-        <div class="section-heading-row">
-          <div>
-            <p class="section-kicker">Progress</p>
-            <h2 id="progress-title">Student statistics</h2>
-          </div>
-          <p class="section-note">Based on your completed tasks.</p>
-        </div>
-
-        <div class="progress-grid analytics-summary-grid" aria-label="Student progress statistics">
-          <div class="summary-item stat-card-orange">
-            <span class="summary-label">Total Tasks</span>
-            <strong id="progress-total">0</strong>
-          </div>
-          <div class="summary-item stat-card-green">
-            <span class="summary-label">Completed</span>
-            <strong id="progress-completed">0</strong>
-          </div>
-          <div class="summary-item stat-card-amber">
-            <span class="summary-label">Pending</span>
-            <strong id="progress-pending">0</strong>
-          </div>
-          <div class="summary-item stat-card-red">
-            <span class="summary-label">Overdue</span>
-            <strong id="progress-overdue">0</strong>
-          </div>
-          <div class="summary-item accent-stat">
-            <span class="summary-label">Completion Rate</span>
-            <strong id="progress-completion-rate">0%</strong>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Completed Today</span>
-            <strong id="progress-today">0</strong>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">This Week</span>
-            <strong id="progress-week">0</strong>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">This Month</span>
-            <strong id="progress-month">0</strong>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">High Priority Done</span>
-            <strong id="progress-high-priority-completed">0</strong>
-          </div>
-        </div>
-
-        <div class="analytics-visual-grid">
-          <div class="chart-card completion-chart-card">
-            <div class="chart-card-header">
-              <div>
-                <span class="chart-label">Completion split</span>
-                <h3>Task completion</h3>
-              </div>
-              <span id="completion-chart-caption" class="chart-caption">0 completed / 0 pending</span>
-            </div>
-            <div
-              id="completion-donut"
-              class="completion-donut"
-              style="--completed-slice: 0%;"
-              aria-label="0 percent completed"
-            >
-              <div class="donut-center">
-                <strong id="donut-rate">0%</strong>
-                <span>Completed</span>
-              </div>
-            </div>
-            <div class="chart-legend">
-              <span><i class="legend-completed"></i>Completed</span>
-              <span><i class="legend-pending"></i>Pending</span>
-            </div>
-          </div>
-
-          <div class="chart-card productivity-chart-card">
-            <div class="chart-card-header">
-              <div>
-                <span class="chart-label">Recent work</span>
-                <h3>Productivity</h3>
-              </div>
-            </div>
-            <div id="productivity-bars" class="productivity-bars" aria-label="Recent productivity bars">
-              <div class="productivity-bar-row">
-                <span>Today</span>
-                <div class="productivity-track"><div class="productivity-fill productivity-today" style="width: 0%;"></div></div>
-                <strong id="productivity-today-count">0</strong>
-              </div>
-              <div class="productivity-bar-row">
-                <span>This Week</span>
-                <div class="productivity-track"><div class="productivity-fill productivity-week" style="width: 0%;"></div></div>
-                <strong id="productivity-week-count">0</strong>
-              </div>
-              <div class="productivity-bar-row">
-                <span>This Month</span>
-                <div class="productivity-track"><div class="productivity-fill productivity-month" style="width: 0%;"></div></div>
-                <strong id="productivity-month-count">0</strong>
-              </div>
-            </div>
-            <p id="productivity-empty" class="chart-empty">No completed tasks yet</p>
-          </div>
-        </div>
-
-        <div class="analytics-bottom-grid">
-          <div class="chart-card category-chart-card">
-            <div class="chart-card-header">
-              <div>
-                <span class="chart-label">Completed by category</span>
-                <h3>Category progress</h3>
-              </div>
-            </div>
-            <div id="category-progress-list" class="category-bar-list">
-              <p class="chart-empty">No category progress yet</p>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section class="task-panel" aria-label="Task manager">

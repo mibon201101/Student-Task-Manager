@@ -8,6 +8,7 @@ A warm, responsive student task manager built with HTML, CSS, and vanilla JavaSc
 - Role-based login for students and admin
 - Default admin account created once in `localStorage`
 - Student dashboard protection and admin dashboard protection
+- Separate student statistics page at `statistics.html`
 - User-specific task storage
 - Editable student profile name
 - Add, edit, delete, and complete tasks
@@ -17,8 +18,8 @@ A warm, responsive student task manager built with HTML, CSS, and vanilla JavaSc
 - Browser notifications for deadline alerts
 - Existing search bar preserved and expanded to search titles, notes, subtasks, category, and priority
 - Status filters, category filter, and sort dropdown
-- Student progress statistics with completion rate and productivity insights
-- Visual student progress analytics panel
+- Student progress statistics with completion rate and productivity insights on a separate page
+- Visual student progress analytics panel on `statistics.html`
 - Completion donut chart for completed vs pending tasks
 - Category progress bars for completed tasks by category
 - Productivity bar graph for tasks completed today, this week, and this month
@@ -40,7 +41,7 @@ The default admin is added only if it does not already exist.
 
 ## Student Progress Statistics
 
-The student dashboard shows:
+The student dashboard stays focused on task management. A `Statistics` button opens `statistics.html`, which shows:
 
 - Total, completed, pending, and overdue tasks
 - Completion rate percentage
@@ -104,7 +105,8 @@ student-task-manager/
 ├── index.html              # Redirects to login.html
 ├── login.html              # Shared login page for students and admin
 ├── signup.html             # Student signup page
-├── dashboard.html          # Student task dashboard
+├── dashboard.html          # Student task management dashboard
+├── statistics.html         # Student productivity analytics page
 ├── admin.html              # Admin dashboard and user management
 ├── style.css               # Shared theme, layout, and responsive styling
 ├── script.js               # Authentication, tasks, admin, stats, and theme logic
@@ -115,7 +117,23 @@ student-task-manager/
 
 ## Screenshots
 
-Add updated screenshots after capturing the Version 3 login, signup, student dashboard, and admin dashboard screens.
+### Login Page
+![Login Page](screenshots/Login.png)
+
+### Signup Page
+![Signup Page](screenshots/Signup.png)
+
+### Student Dashboard
+![Student Dashboard](screenshots/Student_dashboard.png)
+
+### Student Productivity Statistics Page
+![Student Productivity Statistics Page](screenshots/Statistics_page.png)
+
+### Admin Dashboard
+![Admin Dashboard](screenshots/Admin_dashboard.png)
+
+### Dark Mode
+![Dark Mode](screenshots/Dark_mode.png)
 
 ## How to Run the Project
 
@@ -124,6 +142,7 @@ Add updated screenshots after capturing the Version 3 login, signup, student das
 3. Sign up as a student, or log in with the default admin credentials.
 4. Student accounts go to `dashboard.html`.
 5. Admin accounts go to `admin.html`.
+6. From the student dashboard, click Statistics to open `statistics.html`.
 
 Because the project is fully front-end, opening the HTML files directly is enough.
 

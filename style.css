@@ -214,7 +214,33 @@ textarea:focus-visible {
   font-weight: 700;
 }
 
+.dashboard-action-stack {
+  display: grid;
+  gap: 8px;
+  min-width: 140px;
+}
+
+.dashboard-action-stack .logout-btn,
+.dashboard-action-stack .secondary-nav-btn {
+  width: 100%;
+}
+
 .logout-btn {
+  background: var(--primary);
+  color: #fffaf2;
+}
+
+.secondary-nav-btn {
+  min-height: 38px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  font-weight: 800;
+  padding: 0 14px;
+}
+
+.secondary-nav-btn:hover {
   background: var(--primary);
   color: #fffaf2;
 }

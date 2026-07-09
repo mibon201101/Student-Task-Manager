@@ -33,6 +33,10 @@ document.addEventListener("DOMContentLoaded", function () {
     initDashboardPage();
   }
 
+  if (page === "statistics.html") {
+    initStatisticsPage();
+  }
+
   if (page === "admin.html") {
     initAdminPage();
   }
@@ -202,6 +206,7 @@ function initDashboardPage() {
   setupSearchAndSort();
   setupTaskListEvents();
   setupProfileSection();
+  setupDashboardNavigation();
   renderTasks();
   requestNotificationPermission();
 
@@ -210,6 +215,24 @@ function initDashboardPage() {
   }, 60000);
 
   document.querySelector("#logout-btn").addEventListener("click", logout);
+}
+
+function initStatisticsPage() {
+  const currentUser = requireRole("user");
+
+  if (currentUser === null) {
+    return;
+  }
+
+  document.querySelector("#statistics-welcome-message").textContent = `Statistics for ${currentUser.name}`;
+  tasks = loadTasksForEmail(currentUser.email);
+  updateStudentProgress();
+
+  document.querySelector("#back-dashboard-btn").addEventListener("click", function () {
+    redirectTo("dashboard.html");
+  });
+
+  document.querySelector("#statistics-logout-btn").addEventListener("click", logout);
 }
 
 function initAdminPage() {
@@ -427,6 +450,18 @@ function setupProfileSection() {
     document.querySelector("#welcome-message").textContent = `Welcome, ${newName}`;
     profileMessage.classList.add("success");
     profileMessage.textContent = "Profile name updated.";
+  });
+}
+
+function setupDashboardNavigation() {
+  const statisticsButton = document.querySelector("#statistics-btn");
+
+  if (statisticsButton === null) {
+    return;
+  }
+
+  statisticsButton.addEventListener("click", function () {
+    window.location.href = "statistics.html";
   });
 }
 
@@ -1035,7 +1070,6 @@ function renderTasks() {
   });
 
   updateTaskCount();
-  updateStudentProgress();
   updateEmptyState(filteredTasks.length);
 }
 

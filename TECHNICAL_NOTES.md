@@ -77,9 +77,10 @@ Rules:
 
 - If no user is logged in, redirect to `login.html`.
 - `dashboard.html` requires `role: "user"`.
+- `statistics.html` requires `role: "user"`.
 - `admin.html` requires `role: "admin"`.
 - If a student opens `admin.html`, redirect to `dashboard.html`.
-- If an admin opens `dashboard.html`, redirect to `admin.html`.
+- If an admin opens `dashboard.html` or `statistics.html`, redirect to `admin.html`.
 
 Blocked users are removed from `currentUser` and must log in again.
 
@@ -225,7 +226,23 @@ Task counts reuse `getTaskStats()`, the same helper used by the student dashboar
 
 ## Student Progress Statistics
 
-The student dashboard uses `getStudentProgress()` to calculate:
+The student dashboard focuses on task management. Its Statistics button runs:
+
+```js
+window.location.href = "statistics.html";
+```
+
+`statistics.html` is protected with `requireRole("user")`. It loads tasks for the logged-in student with the same email-based key used by the dashboard:
+
+```js
+tasks_user@example.com
+```
+
+Then it calls `updateStudentProgress()` to render the analytics page.
+
+Dashboard task rendering still calls `renderTasks()` and `updateTaskCount()`, but it no longer renders the productivity charts. This keeps dashboard task actions fast and keeps the productivity UI isolated on `statistics.html`.
+
+`getStudentProgress()` calculates:
 
 - Total, completed, pending, and overdue tasks
 - Completion rate
@@ -236,7 +253,7 @@ The student dashboard uses `getStudentProgress()` to calculate:
 - Category-wise completed task counts
 - Category with most completed tasks
 
-The same progress object also feeds the visual analytics panel:
+The same progress object feeds the visual analytics panel:
 
 - Completion donut chart
 - Category progress bars
