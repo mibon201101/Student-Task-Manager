@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Student Task Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page-content">
+    <div class="app admin-app">
+      <section class="app-header" aria-labelledby="admin-page-title">
+        <div>
+          <p class="eyebrow">Student Planner Admin</p>
+          <h1 id="admin-page-title">Admin Dashboard</h1>
+          <p class="intro">Manage student accounts and review task progress across the app.</p>
+        </div>
+        <div class="user-controls">
+          <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Dark Mode</button>
+          <p id="admin-welcome-message">Welcome, Admin</p>
+          <button id="admin-logout-btn" class="logout-btn" type="button">Logout</button>
+        </div>
+      </section>
+
+      <section class="admin-panel" aria-labelledby="admin-summary-title">
+        <div class="section-heading-row">
+          <div>
+            <p class="section-kicker">Overview</p>
+            <h2 id="admin-summary-title">Platform statistics</h2>
+          </div>
+        </div>
+
+        <div class="admin-summary-grid" aria-label="Admin dashboard summary">
+          <div class="summary-item"><span class="summary-label">Total Users</span><strong id="admin-total-users">0</strong></div>
+          <div class="summary-item"><span class="summary-label">Active Users</span><strong id="admin-active-users">0</strong></div>
+          <div class="summary-item"><span class="summary-label">Blocked Users</span><strong id="admin-blocked-users">0</strong></div>
+          <div class="summary-item"><span class="summary-label">Total Tasks</span><strong id="admin-total-tasks">0</strong></div>
+          <div class="summary-item"><span class="summary-label">Completed</span><strong id="admin-completed-tasks">0</strong></div>
+          <div class="summary-item"><span class="summary-label">Pending</span><strong id="admin-pending-tasks">0</strong></div>
+          <div class="summary-item"><span class="summary-label">Overdue</span><strong id="admin-overdue-tasks">0</strong></div>
+          <div class="summary-item"><span class="summary-label">Deadline Soon</span><strong id="admin-deadline-soon-tasks">0</strong></div>
+          <div class="summary-item"><span class="summary-label">High Priority</span><strong id="admin-high-priority-tasks">0</strong></div>
+        </div>
+      </section>
+
+      <section class="admin-panel" aria-labelledby="admin-users-title">
+        <div class="section-heading-row">
+          <div>
+            <p class="section-kicker">Users</p>
+            <h2 id="admin-users-title">Student user management</h2>
+          </div>
+          <p class="section-note">Reset password sets a temporary password: 123456</p>
+        </div>
+        <div id="admin-user-list" class="admin-user-list" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-panel" aria-labelledby="admin-log-title">
+        <div class="section-heading-row">
+          <div>
+            <p class="section-kicker">Activity</p>
+            <h2 id="admin-log-title">Recent admin activity</h2>
+          </div>
+        </div>
+        <ul id="admin-log-list" class="admin-log-list">
+          <li>No admin activity yet.</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Isfaq Hossain. All rights reserved.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

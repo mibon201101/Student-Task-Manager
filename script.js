@@ -2,6 +2,9 @@
 const USERS_KEY = "users";
 const CURRENT_USER_KEY = "currentUser";
 const THEME_KEY = "themePreference";
+const ADMIN_LOGS_KEY = "adminActivityLogs";
+const DEFAULT_ADMIN_EMAIL = "admin@studenttask.com";
+const TEMP_PASSWORD = "123456";
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 // Task state is used only on dashboard.html.
@@ -12,11 +15,11 @@ let currentSearchQuery = "";
 let currentSortMode = "newest";
 let editingTaskId = null;
 
-// Run only the code needed for the page that is currently open.
 document.addEventListener("DOMContentLoaded", function () {
-  const page = getCurrentPageName();
-
+  ensureDefaultAdmin();
   setupThemeToggle();
+
+  const page = getCurrentPageName();
 
   if (page === "login.html" || page === "") {
     initLoginPage();
@@ -29,6 +32,10 @@ document.addEventListener("DOMContentLoaded", function () {
   if (page === "dashboard.html") {
     initDashboardPage();
   }
+
+  if (page === "admin.html") {
+    initAdminPage();
+  }
 });
 
 function getCurrentPageName() {
@@ -40,15 +47,25 @@ function redirectTo(pageName) {
   window.location.href = pageName;
 }
 
+function redirectCurrentUserByRole(user) {
+  if (user.role === "admin") {
+    redirectTo("admin.html");
+    return;
+  }
+
+  redirectTo("dashboard.html");
+}
+
 function initLoginPage() {
   const loginForm = document.querySelector("#login-form");
   const emailInput = document.querySelector("#email-input");
   const passwordInput = document.querySelector("#password-input");
   const loginMessage = document.querySelector("#login-message");
   const showSignupButton = document.querySelector("#show-signup-btn");
+  const currentUser = getCurrentUser();
 
-  if (getCurrentUser() !== null) {
-    redirectTo("dashboard.html");
+  if (currentUser !== null) {
+    redirectCurrentUserByRole(currentUser);
     return;
   }
 
@@ -56,32 +73,36 @@ function initLoginPage() {
     redirectTo("signup.html");
   });
 
-  // Login checks the entered email and password against users saved in localStorage.
   loginForm.addEventListener("submit", function (event) {
     event.preventDefault();
 
     const email = emailInput.value.trim().toLowerCase();
     const password = passwordInput.value;
-    const users = getUsers();
-
-    const matchedUser = users.find(function (user) {
+    const matchedUser = getUsers().find(function (user) {
       return user.email === email && user.password === password;
     });
 
-    if (matchedUser !== undefined) {
-      // Store the current session separately from the full users array.
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({
-        name: matchedUser.name,
-        email: matchedUser.email,
-        createdAt: matchedUser.createdAt || ""
-      }));
+    loginMessage.classList.remove("success");
 
-      redirectTo("dashboard.html");
+    if (matchedUser === undefined) {
+      loginMessage.textContent = "Invalid email or password. Please sign up if you do not have an account.";
       return;
     }
 
-    loginMessage.classList.remove("success");
-    loginMessage.textContent = "Invalid email or password. Please sign up if you do not have an account.";
+    if (matchedUser.blocked) {
+      loginMessage.textContent = "Your account has been blocked. Please contact the administrator.";
+      return;
+    }
+
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({
+      name: matchedUser.name,
+      email: matchedUser.email,
+      role: matchedUser.role,
+      blocked: matchedUser.blocked,
+      createdAt: matchedUser.createdAt
+    }));
+
+    redirectCurrentUserByRole(matchedUser);
   });
 }
 
@@ -92,9 +113,10 @@ function initSignupPage() {
   const signupPasswordInput = document.querySelector("#signup-password-input");
   const signupMessage = document.querySelector("#signup-message");
   const showLoginButton = document.querySelector("#show-login-btn");
+  const currentUser = getCurrentUser();
 
-  if (getCurrentUser() !== null) {
-    redirectTo("dashboard.html");
+  if (currentUser !== null) {
+    redirectCurrentUserByRole(currentUser);
     return;
   }
 
@@ -102,7 +124,6 @@ function initSignupPage() {
     redirectTo("login.html");
   });
 
-  // Signup validates user input and saves a new user object in localStorage.
   signupForm.addEventListener("submit", function (event) {
     event.preventDefault();
 
@@ -151,6 +172,8 @@ function initSignupPage() {
       name: name,
       email: email,
       password: password,
+      role: "user",
+      blocked: false,
       createdAt: new Date().toISOString()
     });
 
@@ -165,19 +188,14 @@ function initSignupPage() {
 }
 
 function initDashboardPage() {
-  const currentUser = getCurrentUser();
+  const currentUser = requireRole("user");
 
-  // Dashboard protection: users must be logged in before using the task manager.
   if (currentUser === null) {
-    redirectTo("login.html");
     return;
   }
 
-  const welcomeMessage = document.querySelector("#welcome-message");
-  const logoutButton = document.querySelector("#logout-btn");
-
-  welcomeMessage.textContent = `Welcome, ${currentUser.name}`;
-  tasks = loadTasks();
+  document.querySelector("#welcome-message").textContent = `Welcome, ${currentUser.name}`;
+  tasks = loadTasksForEmail(currentUser.email);
 
   setupTaskForm();
   setupTaskFilters();
@@ -191,10 +209,46 @@ function initDashboardPage() {
     renderTasks();
   }, 60000);
 
-  logoutButton.addEventListener("click", function () {
-    localStorage.removeItem(CURRENT_USER_KEY);
+  document.querySelector("#logout-btn").addEventListener("click", logout);
+}
+
+function initAdminPage() {
+  const currentUser = requireRole("admin");
+
+  if (currentUser === null) {
+    return;
+  }
+
+  document.querySelector("#admin-welcome-message").textContent = `Welcome, ${currentUser.name}`;
+  document.querySelector("#admin-logout-btn").addEventListener("click", logout);
+  setupAdminActions();
+  renderAdminDashboard();
+}
+
+function requireRole(requiredRole) {
+  const currentUser = getCurrentUser();
+
+  if (currentUser === null) {
     redirectTo("login.html");
-  });
+    return null;
+  }
+
+  if (requiredRole === "user" && currentUser.role === "admin") {
+    redirectTo("admin.html");
+    return null;
+  }
+
+  if (requiredRole === "admin" && currentUser.role !== "admin") {
+    redirectTo("dashboard.html");
+    return null;
+  }
+
+  return currentUser;
+}
+
+function logout() {
+  localStorage.removeItem(CURRENT_USER_KEY);
+  redirectTo("login.html");
 }
 
 function setupTaskForm() {
@@ -218,7 +272,7 @@ function setupTaskForm() {
     }
 
     if (editingTaskId === null) {
-      const newTask = {
+      tasks.push({
         id: Date.now(),
         text: taskText,
         priority: priorityInput.value,
@@ -227,13 +281,11 @@ function setupTaskForm() {
         notes: taskNotes,
         subtasks: [],
         completed: false,
+        completedAt: "",
         notificationSent: false,
         createdAt: new Date().toISOString()
-      };
-
-      tasks.push(newTask);
+      });
     } else {
-      // Editing updates the existing task by id, so completed/category/due data is preserved.
       tasks = tasks.map(function (task) {
         if (task.id === editingTaskId) {
           return {
@@ -286,13 +338,11 @@ function setupSearchAndSort() {
   const searchInput = document.querySelector("#task-search");
   const sortSelect = document.querySelector("#task-sort");
 
-  // Search updates as the user types and checks title, category, and priority.
   searchInput.addEventListener("input", function () {
     currentSearchQuery = searchInput.value.trim().toLowerCase();
     renderTasks();
   });
 
-  // Sorting changes the display order without changing saved task data.
   sortSelect.addEventListener("change", function () {
     currentSortMode = sortSelect.value;
     renderTasks();
@@ -370,9 +420,8 @@ function setupProfileSection() {
     }
 
     localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({
-      name: newName,
-      email: currentUser.email,
-      createdAt: currentUser.createdAt || ""
+      ...currentUser,
+      name: newName
     }));
 
     document.querySelector("#welcome-message").textContent = `Welcome, ${newName}`;
@@ -418,12 +467,12 @@ function setupTaskListEvents() {
     }
 
     if (event.target.classList.contains("add-subtask-btn")) {
-      const subtaskInput = document.querySelector(`#subtask-input-${taskId}`);
-      addSubtask(taskId, subtaskInput);
+      addSubtask(taskId, document.querySelector(`#subtask-input-${taskId}`));
     }
 
     if (event.target.classList.contains("delete-subtask-btn")) {
       const subtaskId = event.target.dataset.subtaskId;
+
       tasks = tasks.map(function (task) {
         if (task.id === taskId) {
           return {
@@ -450,7 +499,8 @@ function setupTaskListEvents() {
         if (task.id === taskId) {
           return {
             ...task,
-            completed: event.target.checked
+            completed: event.target.checked,
+            completedAt: event.target.checked ? new Date().toISOString() : ""
           };
         }
 
@@ -545,7 +595,165 @@ function addSubtask(taskId, subtaskInput) {
   renderTasks();
 }
 
-// Current user/session logic for login persistence.
+function setupAdminActions() {
+  const adminUserList = document.querySelector("#admin-user-list");
+
+  adminUserList.addEventListener("click", function (event) {
+    const email = event.target.dataset.email;
+
+    if (!email) {
+      return;
+    }
+
+    if (event.target.classList.contains("admin-block-btn")) {
+      updateUserByEmail(email, { blocked: true });
+      addAdminLog(`Blocked user ${email}`);
+      renderAdminDashboard();
+    }
+
+    if (event.target.classList.contains("admin-unblock-btn")) {
+      updateUserByEmail(email, { blocked: false });
+      addAdminLog(`Unblocked user ${email}`);
+      renderAdminDashboard();
+    }
+
+    if (event.target.classList.contains("admin-reset-btn")) {
+      updateUserByEmail(email, { password: TEMP_PASSWORD });
+      addAdminLog(`Reset password for user ${email}`);
+      renderAdminDashboard();
+    }
+
+    if (event.target.classList.contains("admin-delete-btn")) {
+      const confirmed = window.confirm(`Delete ${email} and all task data for this user?`);
+
+      if (!confirmed) {
+        return;
+      }
+
+      deleteUserByEmail(email);
+      addAdminLog(`Deleted user ${email}`);
+      renderAdminDashboard();
+    }
+  });
+}
+
+function renderAdminDashboard() {
+  const users = getUsers();
+  const normalUsers = users.filter(function (user) {
+    return user.role === "user";
+  });
+  const allTasks = getAllUserTasks(normalUsers);
+  const adminStats = getTaskStats(allTasks);
+  const activeUsers = normalUsers.filter(function (user) {
+    return !user.blocked;
+  }).length;
+  const blockedUsers = normalUsers.length - activeUsers;
+
+  setText("#admin-total-users", normalUsers.length);
+  setText("#admin-active-users", activeUsers);
+  setText("#admin-blocked-users", blockedUsers);
+  setText("#admin-total-tasks", adminStats.total);
+  setText("#admin-completed-tasks", adminStats.completed);
+  setText("#admin-pending-tasks", adminStats.pending);
+  setText("#admin-overdue-tasks", adminStats.overdue);
+  setText("#admin-deadline-soon-tasks", adminStats.deadlineSoon);
+  setText("#admin-high-priority-tasks", adminStats.highPriority);
+
+  renderAdminUsers(normalUsers);
+  renderAdminLogs();
+}
+
+function renderAdminUsers(users) {
+  const adminUserList = document.querySelector("#admin-user-list");
+
+  if (users.length === 0) {
+    adminUserList.innerHTML = "<p class=\"empty-state show\">No student users yet.</p>";
+    return;
+  }
+
+  adminUserList.innerHTML = users.map(function (user) {
+    const userTasks = loadTasksForEmail(user.email);
+    const stats = getTaskStats(userTasks);
+    const statusText = user.blocked ? "Blocked" : "Active";
+
+    return `
+      <article class="admin-user-card">
+        <div class="admin-user-main">
+          <div>
+            <h3>${escapeHtml(user.name)}</h3>
+            <p>${escapeHtml(user.email)}</p>
+          </div>
+          <span class="status-pill ${user.blocked ? "status-blocked" : "status-active"}">${statusText}</span>
+        </div>
+        <dl class="admin-user-details">
+          <div><dt>Role</dt><dd>${escapeHtml(user.role)}</dd></div>
+          <div><dt>Created</dt><dd>${user.createdAt ? formatDate(user.createdAt.slice(0, 10)) : "Not available"}</dd></div>
+          <div><dt>Total</dt><dd>${stats.total}</dd></div>
+          <div><dt>Completed</dt><dd>${stats.completed}</dd></div>
+          <div><dt>Pending</dt><dd>${stats.pending}</dd></div>
+          <div><dt>Overdue</dt><dd>${stats.overdue}</dd></div>
+          <div><dt>Deadline Soon</dt><dd>${stats.deadlineSoon}</dd></div>
+          <div><dt>High Priority</dt><dd>${stats.highPriority}</dd></div>
+        </dl>
+        <div class="admin-actions">
+          ${user.blocked
+            ? `<button class="admin-unblock-btn success-action" type="button" data-email="${escapeHtml(user.email)}">Unblock</button>`
+            : `<button class="admin-block-btn warning-action" type="button" data-email="${escapeHtml(user.email)}">Block</button>`}
+          <button class="admin-reset-btn secondary-action" type="button" data-email="${escapeHtml(user.email)}">Reset Password</button>
+          <button class="admin-delete-btn danger-action" type="button" data-email="${escapeHtml(user.email)}">Delete</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderAdminLogs() {
+  const adminLogList = document.querySelector("#admin-log-list");
+  const logs = getAdminLogs().slice(0, 8);
+
+  if (logs.length === 0) {
+    adminLogList.innerHTML = "<li>No admin activity yet.</li>";
+    return;
+  }
+
+  adminLogList.innerHTML = logs.map(function (log) {
+    return `
+      <li>
+        <span>${escapeHtml(log.action)}</span>
+        <time>${formatDateTime(log.createdAt)}</time>
+      </li>
+    `;
+  }).join("");
+}
+
+function setText(selector, value) {
+  const element = document.querySelector(selector);
+
+  if (element !== null) {
+    element.textContent = value;
+  }
+}
+
+function ensureDefaultAdmin() {
+  const users = getUsers();
+  const adminExists = users.some(function (user) {
+    return user.email === DEFAULT_ADMIN_EMAIL;
+  });
+
+  if (!adminExists) {
+    users.push({
+      name: "Admin",
+      email: DEFAULT_ADMIN_EMAIL,
+      password: "admin123",
+      role: "admin",
+      blocked: false,
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  saveUsers(users);
+}
+
 function getCurrentUser() {
   const savedUser = localStorage.getItem(CURRENT_USER_KEY);
 
@@ -554,22 +762,23 @@ function getCurrentUser() {
   }
 
   try {
-    const user = JSON.parse(savedUser);
+    const user = normalizeUser(JSON.parse(savedUser));
+    const matchedUser = getUsers().find(function (savedAccount) {
+      return savedAccount.email === user.email;
+    });
 
-    if (user.name && user.email) {
-      const matchedUser = getUsers().find(function (savedAccount) {
-        return savedAccount.email === user.email;
-      });
-
-      return {
-        name: user.name,
-        email: user.email,
-        createdAt: user.createdAt || (matchedUser ? matchedUser.createdAt || "" : "")
-      };
+    if (matchedUser === undefined || matchedUser.blocked) {
+      localStorage.removeItem(CURRENT_USER_KEY);
+      return null;
     }
 
-    localStorage.removeItem(CURRENT_USER_KEY);
-    return null;
+    return {
+      name: matchedUser.name,
+      email: matchedUser.email,
+      role: matchedUser.role,
+      blocked: matchedUser.blocked,
+      createdAt: matchedUser.createdAt
+    };
   } catch (error) {
     localStorage.removeItem(CURRENT_USER_KEY);
     return null;
@@ -586,26 +795,103 @@ function getUsers() {
   try {
     const users = JSON.parse(savedUsers);
 
-    if (Array.isArray(users)) {
-      return users;
+    if (!Array.isArray(users)) {
+      return [];
     }
 
-    return [];
+    return users.map(normalizeUser);
   } catch (error) {
     return [];
   }
 }
 
+function normalizeUser(user) {
+  if (user === null || typeof user !== "object") {
+    user = {};
+  }
+
+  const email = typeof user.email === "string" ? user.email.trim().toLowerCase() : "";
+  const isDefaultAdmin = email === DEFAULT_ADMIN_EMAIL;
+
+  return {
+    name: typeof user.name === "string" && user.name.trim() !== "" ? user.name.trim() : "Student",
+    email: email,
+    password: typeof user.password === "string" ? user.password : "",
+    role: user.role === "admin" || isDefaultAdmin ? "admin" : "user",
+    blocked: isDefaultAdmin ? false : Boolean(user.blocked),
+    createdAt: normalizeCreatedAt(user.createdAt, user.id)
+  };
+}
+
 function saveUsers(users) {
-  // Learning demo only: real apps should never store plain passwords in localStorage.
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  localStorage.setItem(USERS_KEY, JSON.stringify(users.map(normalizeUser)));
+}
+
+function updateUserByEmail(email, updates) {
+  const users = getUsers().map(function (user) {
+    if (user.email === email && user.email !== DEFAULT_ADMIN_EMAIL) {
+      return {
+        ...user,
+        ...updates
+      };
+    }
+
+    return user;
+  });
+
+  saveUsers(users);
+}
+
+function deleteUserByEmail(email) {
+  if (email === DEFAULT_ADMIN_EMAIL) {
+    return;
+  }
+
+  const users = getUsers().filter(function (user) {
+    return user.email !== email;
+  });
+
+  saveUsers(users);
+  localStorage.removeItem(getTaskStorageKeyForEmail(email));
+}
+
+function getAdminLogs() {
+  const savedLogs = localStorage.getItem(ADMIN_LOGS_KEY);
+
+  if (savedLogs === null) {
+    return [];
+  }
+
+  try {
+    const logs = JSON.parse(savedLogs);
+
+    if (!Array.isArray(logs)) {
+      return [];
+    }
+
+    return logs.filter(function (log) {
+      return log && typeof log.action === "string" && typeof log.createdAt === "string";
+    });
+  } catch (error) {
+    return [];
+  }
+}
+
+function addAdminLog(action) {
+  const logs = getAdminLogs();
+
+  logs.unshift({
+    action: action,
+    createdAt: new Date().toISOString()
+  });
+
+  localStorage.setItem(ADMIN_LOGS_KEY, JSON.stringify(logs.slice(0, 30)));
 }
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// User-specific task storage keeps each account's task list separate.
 function getTaskStorageKey() {
   const currentUser = getCurrentUser();
 
@@ -613,7 +899,11 @@ function getTaskStorageKey() {
     return null;
   }
 
-  return `tasks_${currentUser.email}`;
+  return getTaskStorageKeyForEmail(currentUser.email);
+}
+
+function getTaskStorageKeyForEmail(email) {
+  return `tasks_${email}`;
 }
 
 function saveTasks() {
@@ -626,14 +916,8 @@ function saveTasks() {
   localStorage.setItem(taskStorageKey, JSON.stringify(tasks));
 }
 
-function loadTasks() {
-  const taskStorageKey = getTaskStorageKey();
-
-  if (taskStorageKey === null) {
-    return [];
-  }
-
-  const savedTasks = localStorage.getItem(taskStorageKey);
+function loadTasksForEmail(email) {
+  const savedTasks = localStorage.getItem(getTaskStorageKeyForEmail(email));
 
   if (savedTasks === null) {
     return [];
@@ -646,29 +930,41 @@ function loadTasks() {
       return [];
     }
 
-    return savedTaskList.map(function (task) {
-      return {
-        id: task.id,
-        text: typeof task.text === "string" ? task.text : "",
-        priority: normalizePriority(task.priority),
-        category: normalizeCategory(task.category),
-        dueDate: normalizeDueDate(task.dueDate),
-        notes: typeof task.notes === "string" ? task.notes : "",
-        subtasks: normalizeSubtasks(task.subtasks),
-        completed: Boolean(task.completed),
-        notificationSent: Boolean(task.notificationSent),
-        createdAt: normalizeCreatedAt(task.createdAt, task.id)
-      };
-    });
+    return savedTaskList.map(normalizeTask);
   } catch (error) {
     return [];
   }
 }
 
+function getAllUserTasks(users) {
+  let allTasks = [];
+
+  users.forEach(function (user) {
+    allTasks = allTasks.concat(loadTasksForEmail(user.email));
+  });
+
+  return allTasks;
+}
+
+function normalizeTask(task) {
+  return {
+    id: task.id,
+    text: typeof task.text === "string" ? task.text : "",
+    priority: normalizePriority(task.priority),
+    category: normalizeCategory(task.category),
+    dueDate: normalizeDueDate(task.dueDate),
+    notes: typeof task.notes === "string" ? task.notes : "",
+    subtasks: normalizeSubtasks(task.subtasks),
+    completed: Boolean(task.completed),
+    completedAt: normalizeCompletedAt(task.completedAt),
+    notificationSent: Boolean(task.notificationSent),
+    createdAt: normalizeCreatedAt(task.createdAt, task.id)
+  };
+}
+
 function getFilteredTasks() {
   let filteredTasks = tasks;
 
-  // Status filters still work first: All, Pending, or Completed.
   if (currentFilter === "pending") {
     filteredTasks = filteredTasks.filter(function (task) {
       return !task.completed;
@@ -681,7 +977,6 @@ function getFilteredTasks() {
     });
   }
 
-  // Category filter, search, and sorting are layered on top of the status filter.
   filteredTasks = filteredTasks.filter(matchesCategoryFilter);
   filteredTasks = filteredTasks.filter(matchesSearchQuery);
 
@@ -740,6 +1035,7 @@ function renderTasks() {
   });
 
   updateTaskCount();
+  updateStudentProgress();
   updateEmptyState(filteredTasks.length);
 }
 
@@ -788,6 +1084,213 @@ function getSubtaskMarkup(task) {
       </div>
     </div>
   `;
+}
+
+function updateTaskCount() {
+  const stats = getTaskStats(tasks);
+  const currentUser = getCurrentUser();
+
+  setText("#task-count", `${stats.pending} pending / ${stats.completed} completed`);
+  setText("#total-count", stats.total);
+  setText("#pending-count", stats.pending);
+  setText("#completed-count", stats.completed);
+  setText("#overdue-count", stats.overdue);
+  setText("#deadline-soon-count", stats.deadlineSoon);
+  setText("#high-priority-count", stats.highPriority);
+  setText("#profile-total-count", stats.total);
+  setText("#profile-pending-count", stats.pending);
+  setText("#profile-completed-count", stats.completed);
+  setText("#profile-created-date", currentUser && currentUser.createdAt
+    ? formatDate(currentUser.createdAt.slice(0, 10))
+    : "Not available");
+}
+
+function updateStudentProgress() {
+  const progress = getStudentProgress(tasks);
+
+  setText("#progress-total", progress.stats.total);
+  setText("#progress-completed", progress.stats.completed);
+  setText("#progress-pending", progress.stats.pending);
+  setText("#progress-overdue", progress.stats.overdue);
+  setText("#progress-completion-rate", `${progress.completionRate}%`);
+  setText("#progress-today", progress.completedToday);
+  setText("#progress-week", progress.completedThisWeek);
+  setText("#progress-month", progress.completedThisMonth);
+  setText("#progress-productive-day", progress.mostProductiveDay);
+  setText("#progress-productive-month", progress.mostProductiveMonth);
+  setText("#progress-productive-year", progress.mostProductiveYear);
+  setText("#progress-high-priority-completed", progress.highPriorityCompleted);
+  setText("#progress-top-category", progress.topCategory);
+
+  const categoryList = document.querySelector("#category-progress-list");
+
+  if (categoryList === null) {
+    return;
+  }
+
+  if (progress.totalCategoryCompletions === 0) {
+    categoryList.innerHTML = "<li>No category progress yet</li>";
+    return;
+  }
+
+  categoryList.innerHTML = CATEGORY_OPTIONS.map(function (category) {
+    return `<li><span>${formatCategory(category)}</span><strong>${progress.categoryCounts[category]} completed</strong></li>`;
+  }).join("");
+}
+
+function getTaskStats(taskList) {
+  const completed = taskList.filter(function (task) {
+    return task.completed;
+  }).length;
+  const overdue = taskList.filter(function (task) {
+    return getDeadlineInfo(task).isOverdue;
+  }).length;
+  const deadlineSoon = taskList.filter(function (task) {
+    return getDeadlineInfo(task).isUrgent;
+  }).length;
+  const highPriority = taskList.filter(function (task) {
+    return task.priority === "high";
+  }).length;
+
+  return {
+    total: taskList.length,
+    completed: completed,
+    pending: taskList.length - completed,
+    overdue: overdue,
+    deadlineSoon: deadlineSoon,
+    highPriority: highPriority
+  };
+}
+
+const CATEGORY_OPTIONS = ["assignment", "homework", "study-session", "project"];
+
+function getStudentProgress(taskList) {
+  const stats = getTaskStats(taskList);
+  const completedTasks = taskList.filter(function (task) {
+    return task.completed;
+  });
+  const completedWithDates = completedTasks.filter(function (task) {
+    return task.completedAt !== "";
+  });
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfWeek = new Date(startOfToday);
+  startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const categoryCounts = getCompletedCategoryCounts(completedTasks);
+  const totalCategoryCompletions = CATEGORY_OPTIONS.reduce(function (total, category) {
+    return total + categoryCounts[category];
+  }, 0);
+
+  return {
+    stats: stats,
+    completionRate: stats.total === 0 ? 0 : Math.round((stats.completed / stats.total) * 100),
+    completedToday: countCompletedSince(completedWithDates, startOfToday),
+    completedThisWeek: countCompletedSince(completedWithDates, startOfWeek),
+    completedThisMonth: countCompletedSince(completedWithDates, startOfMonth),
+    mostProductiveDay: getMostProductiveText(completedWithDates, "day"),
+    mostProductiveMonth: getMostProductiveText(completedWithDates, "month"),
+    mostProductiveYear: getMostProductiveText(completedWithDates, "year"),
+    highPriorityCompleted: completedTasks.filter(function (task) {
+      return task.priority === "high";
+    }).length,
+    categoryCounts: categoryCounts,
+    totalCategoryCompletions: totalCategoryCompletions,
+    topCategory: getTopCategoryText(categoryCounts)
+  };
+}
+
+function countCompletedSince(completedTasks, startDate) {
+  return completedTasks.filter(function (task) {
+    return new Date(task.completedAt) >= startDate;
+  }).length;
+}
+
+function getCompletedCategoryCounts(completedTasks) {
+  const counts = {
+    "assignment": 0,
+    "homework": 0,
+    "study-session": 0,
+    "project": 0
+  };
+
+  completedTasks.forEach(function (task) {
+    counts[task.category] += 1;
+  });
+
+  return counts;
+}
+
+function getTopCategoryText(categoryCounts) {
+  let topCategory = "";
+  let topCount = 0;
+
+  CATEGORY_OPTIONS.forEach(function (category) {
+    if (categoryCounts[category] > topCount) {
+      topCategory = category;
+      topCount = categoryCounts[category];
+    }
+  });
+
+  if (topCount === 0) {
+    return "No category progress yet";
+  }
+
+  return `${formatCategory(topCategory)} — ${topCount} completed`;
+}
+
+function getMostProductiveText(completedTasks, groupType) {
+  if (completedTasks.length === 0) {
+    return "No completed tasks yet";
+  }
+
+  const counts = {};
+
+  completedTasks.forEach(function (task) {
+    const key = getProductivityKey(task.completedAt, groupType);
+    counts[key] = (counts[key] || 0) + 1;
+  });
+
+  const bestKey = Object.keys(counts).sort(function (firstKey, secondKey) {
+    return counts[secondKey] - counts[firstKey] || firstKey.localeCompare(secondKey);
+  })[0];
+
+  return `${formatProductivityKey(bestKey, groupType)} — ${counts[bestKey]} tasks completed`;
+}
+
+function getProductivityKey(dateString, groupType) {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  if (groupType === "year") {
+    return String(year);
+  }
+
+  if (groupType === "month") {
+    return `${year}-${month}`;
+  }
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatProductivityKey(key, groupType) {
+  if (groupType === "year") {
+    return key;
+  }
+
+  if (groupType === "month") {
+    const parts = key.split("-");
+    const date = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+
+    return date.toLocaleDateString(undefined, {
+      month: "long",
+      year: "numeric"
+    });
+  }
+
+  return formatLongDate(key);
 }
 
 function requestNotificationPermission() {
@@ -907,12 +1410,7 @@ function normalizePriority(priority) {
 }
 
 function normalizeCategory(category) {
-  if (
-    category === "assignment" ||
-    category === "homework" ||
-    category === "study-session" ||
-    category === "project"
-  ) {
+  if (CATEGORY_OPTIONS.includes(category)) {
     return category;
   }
 
@@ -941,6 +1439,14 @@ function normalizeCreatedAt(createdAt, fallbackId) {
   }
 
   return new Date().toISOString();
+}
+
+function normalizeCompletedAt(completedAt) {
+  if (typeof completedAt === "string" && !Number.isNaN(Date.parse(completedAt))) {
+    return completedAt;
+  }
+
+  return "";
 }
 
 function normalizeSubtasks(subtasks) {
@@ -1101,38 +1607,30 @@ function formatDate(dateString) {
   });
 }
 
-function updateTaskCount() {
-  // Summary cards count the full task list, not only the currently filtered results.
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(function (task) {
-    return task.completed;
-  }).length;
-  const pendingTasks = totalTasks - completedTasks;
-  const overdueTasks = tasks.filter(function (task) {
-    return getDeadlineInfo(task).isOverdue;
-  }).length;
-  const deadlineSoonTasks = tasks.filter(function (task) {
-    return getDeadlineInfo(task).isUrgent;
-  }).length;
-  const highPriorityTasks = tasks.filter(function (task) {
-    return task.priority === "high";
-  }).length;
-  const currentUser = getCurrentUser();
+function formatLongDate(dateString) {
+  const dateParts = dateString.split("-");
+  const year = Number(dateParts[0]);
+  const month = Number(dateParts[1]) - 1;
+  const day = Number(dateParts[2]);
+  const date = new Date(year, month, day);
 
-  document.querySelector("#task-count").textContent = `${pendingTasks} pending / ${completedTasks} completed`;
-  document.querySelector("#total-count").textContent = totalTasks;
-  document.querySelector("#pending-count").textContent = pendingTasks;
-  document.querySelector("#completed-count").textContent = completedTasks;
-  document.querySelector("#overdue-count").textContent = overdueTasks;
-  document.querySelector("#deadline-soon-count").textContent = deadlineSoonTasks;
-  document.querySelector("#high-priority-count").textContent = highPriorityTasks;
+  return date.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+}
 
-  document.querySelector("#profile-total-count").textContent = totalTasks;
-  document.querySelector("#profile-pending-count").textContent = pendingTasks;
-  document.querySelector("#profile-completed-count").textContent = completedTasks;
-  document.querySelector("#profile-created-date").textContent = currentUser && currentUser.createdAt
-    ? formatDate(currentUser.createdAt.slice(0, 10))
-    : "Not available";
+function formatDateTime(dateString) {
+  const date = new Date(dateString);
+
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  });
 }
 
 function updateEmptyState(visibleTaskCount) {
@@ -1157,7 +1655,7 @@ function updateEmptyState(visibleTaskCount) {
 }
 
 function escapeHtml(text) {
-  return text
+  return String(text)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")

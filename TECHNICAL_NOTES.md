@@ -1,10 +1,91 @@
-# Student Task Manager Version 2 Technical Notes
+# Student Task Manager Version 3 Technical Notes
 
-This file explains the main JavaScript ideas behind the Student Task Manager project in a beginner-friendly way.
+This file explains the main JavaScript ideas behind the project in a beginner-friendly way.
+
+## User Object Structure
+
+Users are stored in the `users` array in `localStorage`.
+
+```js
+{
+  name: "Isfaq",
+  email: "isfaq@example.com",
+  password: "123456",
+  role: "user",
+  blocked: false,
+  createdAt: "2026-07-09T10:30:00.000Z"
+}
+```
+
+Roles:
+
+- `user`: normal student account
+- `admin`: admin dashboard account
+
+Old users are normalized when loaded. If an old user is missing `role`, `blocked`, or `createdAt`, the app adds safe defaults.
+
+## Default Admin Account
+
+On every page load, `ensureDefaultAdmin()` checks whether this account already exists:
+
+```text
+admin@studenttask.com
+```
+
+If it does not exist, the app creates:
+
+```js
+{
+  name: "Admin",
+  email: "admin@studenttask.com",
+  password: "admin123",
+  role: "admin",
+  blocked: false,
+  createdAt: "current date/time"
+}
+```
+
+Because the function checks by email first, the default admin is not duplicated.
+
+## Role-Based Authentication Logic
+
+The same `login.html` page handles students and admin.
+
+Login flow:
+
+- The entered email and password are checked against `users`.
+- If no match exists, an invalid login message is shown.
+- If the matched account has `blocked: true`, login is denied.
+- If the matched account has `role: "user"`, the app redirects to `dashboard.html`.
+- If the matched account has `role: "admin"`, the app redirects to `admin.html`.
+- The logged-in account is saved as `currentUser`.
+
+Signup always creates normal student users:
+
+```js
+role: "user",
+blocked: false
+```
+
+Users cannot choose an admin role during signup.
+
+## Page Protection Logic
+
+`requireRole()` protects dashboard pages.
+
+Rules:
+
+- If no user is logged in, redirect to `login.html`.
+- `dashboard.html` requires `role: "user"`.
+- `admin.html` requires `role: "admin"`.
+- If a student opens `admin.html`, redirect to `dashboard.html`.
+- If an admin opens `dashboard.html`, redirect to `admin.html`.
+
+Blocked users are removed from `currentUser` and must log in again.
 
 ## Task Object Structure
 
-Each task is stored as an object inside the current user's task array.
+Each task is stored inside the logged-in student's task array.
 
 ```js
 {
@@ -22,6 +103,7 @@ Each task is stored as an object inside the current user's task array.
     }
   ],
   completed: false,
+  completedAt: "",
   notificationSent: false,
   createdAt: "2026-07-09T10:30:00.000Z"
 }
@@ -30,108 +112,188 @@ Each task is stored as an object inside the current user's task array.
 Field meanings:
 
 - `id`: A unique number used to find, edit, complete, or delete a task.
-- `text`: The task title entered by the user.
-- `priority`: The selected priority: `low`, `medium`, or `high`.
-- `category`: The selected category, such as `assignment` or `project`.
-- `dueDate`: The task deadline in `YYYY-MM-DD` format. It can be empty.
+- `text`: The task title.
+- `priority`: `low`, `medium`, or `high`.
+- `category`: `assignment`, `homework`, `study-session`, or `project`.
+- `dueDate`: Deadline in `YYYY-MM-DD` format. It can be empty.
 - `notes`: Optional extra task details.
-- `subtasks`: An array of checklist items for the task.
-- `completed`: A boolean value that tracks whether the main task is done.
-- `notificationSent`: A boolean value that prevents repeated 24-hour deadline browser notifications.
-- `createdAt`: An ISO date string used for newest/oldest sorting.
+- `subtasks`: Checklist items for the task.
+- `completed`: Whether the task is done.
+- `completedAt`: Date/time when the task was completed.
+- `notificationSent`: Prevents repeated deadline browser notifications.
+- `createdAt`: Used for newest/oldest sorting.
 
-Older saved tasks are normalized when loaded. If an old task does not have `notes`, `subtasks`, or `createdAt`, the app adds safe default values.
+Old tasks are normalized when loaded. Missing `notes`, `subtasks`, `completedAt`, or `createdAt` fields get safe default values.
 
-## Subtask Data Structure
+## completedAt Logic
 
-Each subtask is stored inside its parent task.
-
-```js
-{
-  id: 1720450001000,
-  text: "Read the rubric",
-  completed: false
-}
-```
-
-Subtasks are added from the task card, marked complete with a checkbox, and deleted with a small delete button. The dashboard shows progress as `2/5 subtasks completed`.
-
-## Main JavaScript Logic
-
-The project uses one JavaScript file, `script.js`, for all pages. When the page loads, the script checks which HTML page is open and runs only the matching setup function.
-
-Main page setup functions:
-
-- `initLoginPage()` runs the login form logic.
-- `initSignupPage()` runs the signup form logic.
-- `initDashboardPage()` protects the dashboard and starts the task manager.
-- `setupThemeToggle()` applies the saved light/dark theme on every page.
-
-Main dashboard functions:
-
-- `setupTaskForm()` handles adding new tasks and saving edited tasks, including notes.
-- `setupTaskFilters()` handles All, Pending, Completed, and category filters.
-- `setupSearchAndSort()` handles the existing search bar and the sort dropdown.
-- `setupTaskListEvents()` handles Edit, Delete, Complete, and subtask actions.
-- `setupProfileSection()` handles the editable dashboard profile name.
-- `renderTasks()` updates the task list in the browser.
-- `updateTaskCount()` updates summary and profile stats.
-- `getDeadlineInfo()` calculates countdown, overdue, and deadline warning status.
-
-## localStorage Updates
-
-The app uses browser `localStorage` so data stays available after refreshing the page.
-
-Important storage keys:
+When a student checks a task as completed:
 
 ```js
-users
-currentUser
-themePreference
-tasks_user@example.com
+completedAt: new Date().toISOString()
 ```
 
-How each key is used:
-
-- `users` stores all signed-up users as an array.
-- `currentUser` stores the currently logged-in user.
-- `themePreference` stores either `light` or `dark`.
-- `tasks_email@example.com` stores tasks for one specific user.
-
-Example user:
+When a completed task is unchecked and marked pending again:
 
 ```js
-{
-  name: "Isfaq",
-  email: "isfaq@example.com",
-  password: "123456",
-  createdAt: "2026-07-09T10:30:00.000Z"
-}
+completedAt: ""
 ```
 
-This is a front-end demo authentication system. In a real app, passwords should not be stored in `localStorage`. A real app would use a secure backend and hashed passwords.
+This field powers daily, weekly, monthly, and productivity statistics.
 
 ## User-Specific Task Saving
 
-Each user gets a separate task list. The app creates a task storage key from the logged-in user's email.
-
-Example:
+Each student gets a separate task list key:
 
 ```js
 tasks_isfaq@example.com
 tasks_student@example.com
 ```
 
-Updating a profile name does not change the email, so the same task storage key remains connected to the account.
+Normal users only load their own task key. Admin users count tasks across all normal student users by loading each student's task key.
+
+## localStorage Keys
+
+```js
+users
+currentUser
+themePreference
+adminActivityLogs
+tasks_user@example.com
+```
+
+How each key is used:
+
+- `users`: all signed-up users and the default admin.
+- `currentUser`: the logged-in user session.
+- `themePreference`: `light` or `dark`.
+- `adminActivityLogs`: recent admin actions.
+- `tasks_email@example.com`: one user's task list.
+
+## Admin User Management Logic
+
+The admin dashboard displays normal student users only.
+
+For each student, admin can:
+
+- Block user: sets `blocked: true`.
+- Unblock user: sets `blocked: false`.
+- Reset password: sets `password: "123456"`.
+- Delete user: removes the user and removes `tasks_email@example.com`.
+
+Delete asks for confirmation with `window.confirm()`.
+
+The default admin account is not listed with dangerous actions, and helper functions also protect the default admin email.
+
+## Admin Activity Log Structure
+
+Admin actions are saved in `adminActivityLogs`.
+
+```js
+{
+  action: "Blocked user student@example.com",
+  createdAt: "2026-07-09T11:10:00.000Z"
+}
+```
+
+Logged actions include:
+
+- Blocked user email
+- Unblocked user email
+- Deleted user email
+- Reset password for user email
+
+The dashboard shows the most recent logs first.
+
+## Admin Statistics
+
+Admin statistics are calculated across all normal student users.
+
+Cards show:
+
+- Total users
+- Active users
+- Blocked users
+- Total tasks
+- Completed tasks
+- Pending tasks
+- Overdue tasks
+- Deadline soon tasks
+- High priority tasks
+
+Task counts reuse `getTaskStats()`, the same helper used by the student dashboard.
+
+## Student Progress Statistics
+
+The student dashboard uses `getStudentProgress()` to calculate:
+
+- Total, completed, pending, and overdue tasks
+- Completion rate
+- Tasks completed today
+- Tasks completed this week
+- Tasks completed this month
+- Most productive day
+- Most productive month
+- Most productive year
+- High priority tasks completed
+- Category-wise completed task counts
+- Category with most completed tasks
+
+## Completion Rate Calculation
+
+```js
+completionRate = Math.round((completedTasks / totalTasks) * 100)
+```
+
+If there are no tasks, the completion rate is `0%`.
+
+## Most Productive Day, Month, and Year
+
+The app groups completed tasks by `completedAt`.
+
+Examples:
+
+- Day key: `2026-07-08`
+- Month key: `2026-07`
+- Year key: `2026`
+
+The group with the highest completed task count is displayed.
+
+Example display:
+
+```text
+8 July 2026 — 5 tasks completed
+July 2026 — 18 tasks completed
+2026 — 45 tasks completed
+```
+
+If there are no completed tasks with completion dates, the dashboard shows:
+
+```text
+No completed tasks yet
+```
+
+## Category-Wise Progress Calculation
+
+The app counts completed tasks in these categories:
+
+- Assignment
+- Homework
+- Study Session
+- Project
+
+It also finds the category with the highest completed count. If no category has completed tasks, it shows:
+
+```text
+No category progress yet
+```
 
 ## Search, Filtering, and Sorting Logic
 
 Search:
 
 - The existing search bar is reused.
-- It listens for user typing.
 - It checks task title, notes, subtask text, category, formatted category, priority, and formatted priority.
-- Matching tasks stay visible.
 
 Filtering:
 
@@ -140,149 +302,17 @@ Filtering:
 - Search runs after category filtering.
 - Sorting runs last on the visible result list.
 
-Sorting options:
-
-- Newest first compares `createdAt` from newest to oldest.
-- Oldest first compares `createdAt` from oldest to newest.
-- Deadline nearest first puts the soonest due date first and tasks without due dates last.
-- Deadline farthest first puts the farthest due date first and tasks without due dates last.
-- Priority high to low ranks High, Medium, then Low.
-- Priority low to high ranks Low, Medium, then High.
-- Pending first puts unfinished tasks before completed tasks.
-- Completed first puts completed tasks before unfinished tasks.
-
-Sorting only changes the displayed order. It does not rewrite the saved task order in `localStorage`.
-
-## Dashboard Summary Logic
-
-Summary cards count the full task list, not only the currently visible filtered list.
-
-- Total tasks counts all tasks.
-- Completed tasks counts tasks where `completed` is `true`.
-- Pending tasks counts unfinished tasks.
-- Overdue tasks uses `getDeadlineInfo()`.
-- Deadline soon tasks counts unfinished tasks with 24 hours or less remaining.
-- High priority tasks counts tasks where `priority` is `high`.
-
-The profile section reuses the same total, completed, and pending counts.
+Sorting does not rewrite saved task data.
 
 ## Dark Mode Logic
 
-The theme toggle appears on login, signup, and dashboard pages.
+The theme toggle appears on login, signup, student dashboard, and admin dashboard pages.
 
-- `setupThemeToggle()` reads `themePreference` from `localStorage`.
-- `applyTheme()` adds or removes the `dark-mode` class on `body`.
+- `setupThemeToggle()` reads `themePreference`.
+- `applyTheme()` toggles `body.dark-mode`.
 - The button text changes between `Dark Mode` and `Light Mode`.
-- The selected theme is saved and stays after refresh.
+- The selected theme stays after refresh.
 
-Dark mode uses the same CSS variable names as light mode, but with darker warm neutral values and an orange accent.
+## Important Security Note
 
-## Theme and Color System
-
-The project uses CSS custom properties in `:root` for the light theme and `body.dark-mode` for the dark theme.
-
-Main variables:
-
-```css
---bg
---bg-accent
---panel
---panel-soft
---surface
---text
---muted
---line
---primary
---primary-dark
---primary-soft
---success
---danger
---warning
-```
-
-This keeps the orange/off-white theme consistent across buttons, cards, inputs, filters, badges, task cards, footer, and dashboard panels.
-
-## Profile Update Logic
-
-The profile section displays:
-
-- User name
-- User email
-- Total tasks
-- Completed tasks
-- Pending tasks
-- Account created date if available
-
-When the user updates their name:
-
-- The matching user in the `users` array is updated.
-- The `currentUser` session object is updated.
-- The dashboard welcome message updates immediately.
-- The email remains unchanged, so task data stays connected to the same `tasks_email@example.com` key.
-
-## Countdown and Notification Logic
-
-Countdown:
-
-- Each task can have a due date.
-- `getDeadlineInfo()` compares the due date with the current time.
-- The app displays friendly text such as `3 days left`, `4 hours 20 minutes left`, or `Overdue`.
-- A timer refreshes the dashboard every minute while the app is open.
-
-Deadline warning:
-
-- If a task has 24 hours or less remaining, the dashboard shows a warning badge.
-- Completed tasks do not show urgent or overdue warnings.
-
-Browser notification:
-
-- After the dashboard loads, the app asks for browser notification permission.
-- If permission is granted, the app sends one notification when a task is within 24 hours of its deadline.
-- The `notificationSent` field prevents the same task from sending repeated notifications.
-- If the browser does not support notifications or the user denies permission, the app still works normally.
-
-## Interview Talking Points
-
-- The project uses separate HTML pages for login, signup, and dashboard.
-- It uses vanilla JavaScript only, with no framework or external library.
-- It demonstrates DOM selection, event listeners, form handling, rendering, and local data persistence.
-- It uses arrays of objects to manage tasks and nested arrays for subtasks.
-- It keeps tasks user-specific by saving them under an email-based key.
-- It layers filtering, searching, and sorting without damaging saved task data.
-- It updates the UI from the data array instead of manually editing each task element.
-- It protects the dashboard by redirecting users who are not logged in.
-- It handles older saved tasks safely by normalizing missing fields when tasks load.
-
-## Possible Interview Questions and Answers
-
-### Why did you use localStorage?
-
-I used `localStorage` because this is a front-end-only project. It lets the browser save users, login status, theme preference, and tasks after a page refresh without needing a backend.
-
-### Is this authentication secure?
-
-No. This is a demo authentication flow for learning front-end logic. A real project should use a backend, secure sessions, and hashed passwords instead of storing passwords in `localStorage`.
-
-### How do you keep each user's tasks separate?
-
-The app creates a unique task key from the logged-in user's email, such as `tasks_isfaq@example.com`. Each user loads and saves tasks under their own key.
-
-### How does editing work?
-
-When the user clicks Edit, the app finds the task by its `id` and fills the form with the existing task data, including notes. When the form is submitted, the app updates that same task object.
-
-### How do subtasks work?
-
-Each task has a `subtasks` array. Adding, completing, or deleting a subtask updates that array, saves the full task list to `localStorage`, and renders the dashboard again.
-
-### How does sorting work with search and filters?
-
-The app first applies status and category filters, then applies the search query, and finally sorts the remaining visible tasks. This keeps the existing search feature working with every sort option.
-
-### How does dark mode work?
-
-The selected theme is saved as `themePreference`. On page load, the app applies the saved theme by toggling the `dark-mode` class on `body`.
-
-### What would you improve next?
-
-I would add password confirmation, recurring tasks, export/import, drag-and-drop ordering, and a real backend for secure authentication and shared data access.
+This is a front-end-only demo. Passwords and role data are stored in `localStorage` for learning purposes only. A real project should use a secure backend, hashed passwords, real sessions, and server-side authorization.

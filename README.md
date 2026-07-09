@@ -1,29 +1,74 @@
-# Student Task Manager Version 2
+# Student Task Manager Version 3
 
-A warm, responsive student task manager built with HTML, CSS, and vanilla JavaScript. The app helps students create accounts, manage user-specific tasks, track deadlines, organize subtasks, and keep a clean personal dashboard.
+A warm, responsive student task manager built with HTML, CSS, and vanilla JavaScript. The app now supports role-based login, a student dashboard with progress statistics, and an admin dashboard for demo user management.
 
 ## Features
 
-- Signup with name, email, password, and account creation date
-- Login, logout, dashboard protection, and user-specific task storage
-- Dashboard profile section with editable name
+- Signup with name, email, password, account creation date, and default `user` role
+- Role-based login for students and admin
+- Default admin account created once in `localStorage`
+- Student dashboard protection and admin dashboard protection
+- User-specific task storage
+- Editable student profile name
 - Add, edit, delete, and complete tasks
 - Optional task description/notes
 - Subtasks/checklist items with progress counts
 - Priority, category, due date, countdown timer, overdue status, and 24-hour warnings
 - Browser notifications for deadline alerts
 - Existing search bar preserved and expanded to search titles, notes, subtasks, category, and priority
-- Status filters: All, Pending, Completed
-- Category filter
-- Sort dropdown with newest, oldest, deadline, priority, pending, and completed options
-- Summary cards for total, completed, pending, overdue, deadline soon, and high priority tasks
+- Status filters, category filter, and sort dropdown
+- Student progress statistics with completion rate and productivity insights
+- Category-wise completed task progress
+- Admin summary cards across all student users
+- Admin user management: block, unblock, delete, and reset password
+- Admin activity log saved in `localStorage`
 - Light and dark mode with saved theme preference
-- `localStorage` data persistence
 - Sticky footer and responsive layout
+
+## Default Admin Login
+
+```text
+Email: admin@studenttask.com
+Password: admin123
+```
+
+The default admin is added only if it does not already exist.
+
+## Student Progress Statistics
+
+The student dashboard shows:
+
+- Total, completed, pending, and overdue tasks
+- Completion rate percentage
+- Tasks completed today, this week, and this month
+- Most productive day, month, and year
+- High priority tasks completed
+- Category with most completed tasks
+- Category-wise completed task counts
+
+Completion statistics use the `completedAt` timestamp saved when a task is marked completed.
+
+## Admin Dashboard
+
+The admin dashboard shows:
+
+- Total users, active users, and blocked users
+- Total, completed, pending, overdue, deadline soon, and high priority tasks across all student users
+- A responsive user management list for all normal student accounts
+- Recent admin activity logs
+
+Admin actions:
+
+- Block user
+- Unblock user
+- Delete user and that user's task data
+- Reset password to `123456`
+
+The default admin account is protected from dangerous actions.
 
 ## Theme
 
-Version 2 replaces the previous blue theme with a soft orange and off-white color system.
+The project uses a soft orange and off-white color system.
 
 - Background: warm light cream/off-white
 - Cards and forms: soft warm neutral surfaces
@@ -35,7 +80,7 @@ Version 2 replaces the previous blue theme with a soft orange and off-white colo
 - Warning: readable amber/orange
 - Dark mode: dark warm neutrals with the same orange accent
 
-The theme is applied consistently across login, signup, dashboard, buttons, filters, badges, task cards, summary cards, profile cards, footer, and form inputs.
+The theme is applied consistently across login, signup, student dashboard, admin dashboard, buttons, filters, badges, cards, footer, and form inputs.
 
 ## Technologies Used
 
@@ -52,11 +97,12 @@ No backend, database, framework, or external library is required.
 ```text
 student-task-manager/
 ├── index.html              # Redirects to login.html
-├── login.html              # Login page
-├── signup.html             # Signup page
-├── dashboard.html          # Main task manager dashboard
-├── style.css               # Shared light/dark theme and responsive styling
-├── script.js               # Authentication, tasks, filters, sorting, profile, and theme logic
+├── login.html              # Shared login page for students and admin
+├── signup.html             # Student signup page
+├── dashboard.html          # Student task dashboard
+├── admin.html              # Admin dashboard and user management
+├── style.css               # Shared theme, layout, and responsive styling
+├── script.js               # Authentication, tasks, admin, stats, and theme logic
 ├── README.md               # Project documentation
 ├── TECHNICAL_NOTES.md      # Technical explanation and interview notes
 └── screenshots/            # Project screenshots
@@ -64,23 +110,15 @@ student-task-manager/
 
 ## Screenshots
 
-### Login Page
-![Login Page](screenshots/login_page.png)
-
-### Signup Page
-![Signup Page](screenshots/signup_page.png)
-
-### Dashboard Page
-
-Refresh or add a new dashboard screenshot after capturing the Version 2 dashboard.
+Add updated screenshots after capturing the Version 3 login, signup, student dashboard, and admin dashboard screens.
 
 ## How to Run the Project
 
 1. Download or clone this repository.
 2. Open `index.html` or `login.html` in a browser.
-3. Click Sign up to create an account.
-4. Login using the created email and password.
-5. Manage tasks from `dashboard.html`.
+3. Sign up as a student, or log in with the default admin credentials.
+4. Student accounts go to `dashboard.html`.
+5. Admin accounts go to `admin.html`.
 
 Because the project is fully front-end, opening the HTML files directly is enough.
 
@@ -98,5 +136,5 @@ https://your-username.github.io/student-task-manager/
 - Add export/import for task data
 - Add recurring tasks
 - Add drag-and-drop task ordering
-- Add more category options
+- Add admin search/filter tools
 - Add a secure backend for real authentication
