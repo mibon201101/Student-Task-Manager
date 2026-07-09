@@ -1,6 +1,7 @@
 // Shared localStorage keys for the front-end authentication demo.
 const USERS_KEY = "users";
 const CURRENT_USER_KEY = "currentUser";
+const THEME_KEY = "themePreference";
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 // Task state is used only on dashboard.html.
@@ -8,12 +9,14 @@ let tasks = [];
 let currentFilter = "all";
 let currentCategoryFilter = "all";
 let currentSearchQuery = "";
-let currentSortMode = "default";
+let currentSortMode = "newest";
 let editingTaskId = null;
 
 // Run only the code needed for the page that is currently open.
 document.addEventListener("DOMContentLoaded", function () {
   const page = getCurrentPageName();
+
+  setupThemeToggle();
 
   if (page === "login.html" || page === "") {
     initLoginPage();
@@ -69,7 +72,8 @@ function initLoginPage() {
       // Store the current session separately from the full users array.
       localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({
         name: matchedUser.name,
-        email: matchedUser.email
+        email: matchedUser.email,
+        createdAt: matchedUser.createdAt || ""
       }));
 
       redirectTo("dashboard.html");
@@ -146,7 +150,8 @@ function initSignupPage() {
     users.push({
       name: name,
       email: email,
-      password: password
+      password: password,
+      createdAt: new Date().toISOString()
     });
 
     saveUsers(users);
@@ -178,6 +183,7 @@ function initDashboardPage() {
   setupTaskFilters();
   setupSearchAndSort();
   setupTaskListEvents();
+  setupProfileSection();
   renderTasks();
   requestNotificationPermission();
 
@@ -201,8 +207,10 @@ function setupTaskForm() {
     const priorityInput = document.querySelector("#priority-input");
     const categoryInput = document.querySelector("#category-input");
     const dueDateInput = document.querySelector("#due-date-input");
+    const notesInput = document.querySelector("#task-notes-input");
     const formMessage = document.querySelector("#form-message");
     const taskText = taskInput.value.trim();
+    const taskNotes = notesInput.value.trim();
 
     if (taskText === "") {
       formMessage.textContent = "Please enter a task before adding it.";
@@ -216,8 +224,11 @@ function setupTaskForm() {
         priority: priorityInput.value,
         category: categoryInput.value,
         dueDate: dueDateInput.value,
+        notes: taskNotes,
+        subtasks: [],
         completed: false,
-        notificationSent: false
+        notificationSent: false,
+        createdAt: new Date().toISOString()
       };
 
       tasks.push(newTask);
@@ -231,6 +242,7 @@ function setupTaskForm() {
             priority: priorityInput.value,
             category: categoryInput.value,
             dueDate: dueDateInput.value,
+            notes: taskNotes,
             notificationSent: task.dueDate === dueDateInput.value ? task.notificationSent : false
           };
         }
@@ -287,6 +299,88 @@ function setupSearchAndSort() {
   });
 }
 
+function setupThemeToggle() {
+  const themeToggle = document.querySelector("#theme-toggle");
+  const savedTheme = localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light";
+
+  applyTheme(savedTheme);
+
+  if (themeToggle === null) {
+    return;
+  }
+
+  themeToggle.addEventListener("click", function () {
+    const nextTheme = document.body.classList.contains("dark-mode") ? "light" : "dark";
+
+    localStorage.setItem(THEME_KEY, nextTheme);
+    applyTheme(nextTheme);
+  });
+}
+
+function applyTheme(theme) {
+  const themeToggle = document.querySelector("#theme-toggle");
+  const isDarkMode = theme === "dark";
+
+  document.body.classList.toggle("dark-mode", isDarkMode);
+
+  if (themeToggle !== null) {
+    themeToggle.textContent = isDarkMode ? "Light Mode" : "Dark Mode";
+    themeToggle.setAttribute("aria-pressed", String(isDarkMode));
+  }
+}
+
+function setupProfileSection() {
+  const currentUser = getCurrentUser();
+  const profileForm = document.querySelector("#profile-form");
+  const profileNameInput = document.querySelector("#profile-name-input");
+  const profileEmail = document.querySelector("#profile-email");
+  const profileMessage = document.querySelector("#profile-message");
+
+  if (currentUser === null || profileForm === null) {
+    return;
+  }
+
+  profileNameInput.value = currentUser.name;
+  profileEmail.textContent = currentUser.email;
+
+  profileForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+
+    const newName = profileNameInput.value.trim();
+
+    profileMessage.classList.remove("success");
+
+    if (newName === "") {
+      profileMessage.textContent = "Please enter a name.";
+      return;
+    }
+
+    const users = getUsers();
+    const userIndex = users.findIndex(function (user) {
+      return user.email === currentUser.email;
+    });
+
+    if (userIndex !== -1) {
+      users[userIndex] = {
+        ...users[userIndex],
+        name: newName
+      };
+
+      saveUsers(users);
+    }
+
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({
+      name: newName,
+      email: currentUser.email,
+      createdAt: currentUser.createdAt || ""
+    }));
+
+    document.querySelector("#welcome-message").textContent = `Welcome, ${newName}`;
+    profileMessage.classList.add("success");
+    profileMessage.textContent = "Profile name updated.";
+  });
+}
+
 function setupTaskListEvents() {
   const taskList = document.querySelector("#task-list");
 
@@ -316,10 +410,35 @@ function setupTaskListEvents() {
       document.querySelector("#priority-input").value = taskToEdit.priority;
       document.querySelector("#category-input").value = taskToEdit.category;
       document.querySelector("#due-date-input").value = taskToEdit.dueDate;
-      document.querySelector("#task-form button").textContent = "Save Task";
-      document.querySelector("#form-message").textContent = "Editing task. Update the text, then click Save Task.";
+      document.querySelector("#task-notes-input").value = taskToEdit.notes;
+      document.querySelector("#task-submit-btn").textContent = "Save Task";
+      document.querySelector("#form-message").textContent = "Editing task. Update the fields, then click Save Task.";
       editingTaskId = taskToEdit.id;
       document.querySelector("#task-input").focus();
+    }
+
+    if (event.target.classList.contains("add-subtask-btn")) {
+      const subtaskInput = document.querySelector(`#subtask-input-${taskId}`);
+      addSubtask(taskId, subtaskInput);
+    }
+
+    if (event.target.classList.contains("delete-subtask-btn")) {
+      const subtaskId = event.target.dataset.subtaskId;
+      tasks = tasks.map(function (task) {
+        if (task.id === taskId) {
+          return {
+            ...task,
+            subtasks: task.subtasks.filter(function (subtask) {
+              return String(subtask.id) !== String(subtaskId);
+            })
+          };
+        }
+
+        return task;
+      });
+
+      saveTasks();
+      renderTasks();
     }
   });
 
@@ -341,6 +460,42 @@ function setupTaskListEvents() {
       saveTasks();
       renderTasks();
     }
+
+    if (event.target.classList.contains("subtask-checkbox")) {
+      const subtaskId = event.target.dataset.subtaskId;
+
+      tasks = tasks.map(function (task) {
+        if (task.id === taskId) {
+          return {
+            ...task,
+            subtasks: task.subtasks.map(function (subtask) {
+              if (String(subtask.id) === String(subtaskId)) {
+                return {
+                  ...subtask,
+                  completed: event.target.checked
+                };
+              }
+
+              return subtask;
+            })
+          };
+        }
+
+        return task;
+      });
+
+      saveTasks();
+      renderTasks();
+    }
+  });
+
+  taskList.addEventListener("keydown", function (event) {
+    if (!event.target.classList.contains("subtask-input") || event.key !== "Enter") {
+      return;
+    }
+
+    event.preventDefault();
+    addSubtask(Number(event.target.dataset.id), event.target);
   });
 }
 
@@ -349,10 +504,45 @@ function resetForm() {
   document.querySelector("#priority-input").value = "medium";
   document.querySelector("#category-input").value = "assignment";
   document.querySelector("#due-date-input").value = "";
-  document.querySelector("#task-form button").textContent = "Add Task";
+  document.querySelector("#task-notes-input").value = "";
+  document.querySelector("#task-submit-btn").textContent = "Add Task";
   document.querySelector("#form-message").textContent = "";
   editingTaskId = null;
   document.querySelector("#task-input").focus();
+}
+
+function addSubtask(taskId, subtaskInput) {
+  if (subtaskInput === null) {
+    return;
+  }
+
+  const subtaskText = subtaskInput.value.trim();
+
+  if (subtaskText === "") {
+    subtaskInput.focus();
+    return;
+  }
+
+  tasks = tasks.map(function (task) {
+    if (task.id === taskId) {
+      return {
+        ...task,
+        subtasks: [
+          ...task.subtasks,
+          {
+            id: Date.now(),
+            text: subtaskText,
+            completed: false
+          }
+        ]
+      };
+    }
+
+    return task;
+  });
+
+  saveTasks();
+  renderTasks();
 }
 
 // Current user/session logic for login persistence.
@@ -367,7 +557,15 @@ function getCurrentUser() {
     const user = JSON.parse(savedUser);
 
     if (user.name && user.email) {
-      return user;
+      const matchedUser = getUsers().find(function (savedAccount) {
+        return savedAccount.email === user.email;
+      });
+
+      return {
+        name: user.name,
+        email: user.email,
+        createdAt: user.createdAt || (matchedUser ? matchedUser.createdAt || "" : "")
+      };
     }
 
     localStorage.removeItem(CURRENT_USER_KEY);
@@ -455,8 +653,11 @@ function loadTasks() {
         priority: normalizePriority(task.priority),
         category: normalizeCategory(task.category),
         dueDate: normalizeDueDate(task.dueDate),
+        notes: typeof task.notes === "string" ? task.notes : "",
+        subtasks: normalizeSubtasks(task.subtasks),
         completed: Boolean(task.completed),
-        notificationSent: Boolean(task.notificationSent)
+        notificationSent: Boolean(task.notificationSent),
+        createdAt: normalizeCreatedAt(task.createdAt, task.id)
       };
     });
   } catch (error) {
@@ -518,6 +719,7 @@ function renderTasks() {
       >
       <div class="task-content">
         <span class="task-text">${escapeHtml(task.text)}</span>
+        ${task.notes ? `<p class="task-notes">${escapeHtml(task.notes)}</p>` : ""}
         <div class="task-meta">
           <span class="meta-pill priority-${task.priority}">${formatPriority(task.priority)} Priority</span>
           <span class="meta-pill category-pill">${formatCategory(task.category)}</span>
@@ -526,6 +728,7 @@ function renderTasks() {
           ${deadlineInfo.isOverdue ? `<span class="meta-pill overdue-label">Overdue</span>` : ""}
           ${deadlineInfo.isUrgent ? `<span class="meta-pill deadline-warning">Less than 24 hours left</span>` : ""}
         </div>
+        ${getSubtaskMarkup(task)}
       </div>
       <div class="task-actions">
         <button class="edit-btn" type="button" data-id="${task.id}">Edit</button>
@@ -538,6 +741,53 @@ function renderTasks() {
 
   updateTaskCount();
   updateEmptyState(filteredTasks.length);
+}
+
+function getSubtaskMarkup(task) {
+  const completedSubtasks = task.subtasks.filter(function (subtask) {
+    return subtask.completed;
+  }).length;
+
+  const subtaskItems = task.subtasks.map(function (subtask) {
+    return `
+      <li class="subtask-item">
+        <label>
+          <input
+            class="subtask-checkbox"
+            type="checkbox"
+            data-id="${task.id}"
+            data-subtask-id="${subtask.id}"
+            ${subtask.completed ? "checked" : ""}
+          >
+          <span>${escapeHtml(subtask.text)}</span>
+        </label>
+        <button
+          class="delete-subtask-btn"
+          type="button"
+          data-id="${task.id}"
+          data-subtask-id="${subtask.id}"
+          aria-label="Delete subtask ${escapeHtml(subtask.text)}"
+        >Delete</button>
+      </li>
+    `;
+  }).join("");
+
+  return `
+    <div class="subtask-area">
+      <p class="subtask-progress">${completedSubtasks}/${task.subtasks.length} subtasks completed</p>
+      ${task.subtasks.length > 0 ? `<ul class="subtask-list">${subtaskItems}</ul>` : ""}
+      <div class="subtask-add-row">
+        <input
+          id="subtask-input-${task.id}"
+          class="subtask-input"
+          type="text"
+          data-id="${task.id}"
+          placeholder="Add checklist item"
+        >
+        <button class="add-subtask-btn" type="button" data-id="${task.id}">Add</button>
+      </div>
+    </div>
+  `;
 }
 
 function requestNotificationPermission() {
@@ -677,6 +927,40 @@ function normalizeDueDate(dueDate) {
   return "";
 }
 
+function normalizeCreatedAt(createdAt, fallbackId) {
+  if (typeof createdAt === "string" && !Number.isNaN(Date.parse(createdAt))) {
+    return createdAt;
+  }
+
+  if (typeof fallbackId === "number" && Number.isFinite(fallbackId)) {
+    const fallbackDate = new Date(fallbackId);
+
+    if (!Number.isNaN(fallbackDate.getTime())) {
+      return fallbackDate.toISOString();
+    }
+  }
+
+  return new Date().toISOString();
+}
+
+function normalizeSubtasks(subtasks) {
+  if (!Array.isArray(subtasks)) {
+    return [];
+  }
+
+  return subtasks
+    .filter(function (subtask) {
+      return subtask && typeof subtask.text === "string";
+    })
+    .map(function (subtask, index) {
+      return {
+        id: subtask.id || `${Date.now()}-${index}`,
+        text: subtask.text,
+        completed: Boolean(subtask.completed)
+      };
+    });
+}
+
 function formatPriority(priority) {
   return priority.charAt(0).toUpperCase() + priority.slice(1);
 }
@@ -700,6 +984,10 @@ function matchesSearchQuery(task) {
 
   const searchableText = [
     task.text,
+    task.notes,
+    task.subtasks.map(function (subtask) {
+      return subtask.text;
+    }).join(" "),
     task.category,
     formatCategory(task.category),
     task.priority,
@@ -712,15 +1000,51 @@ function matchesSearchQuery(task) {
 function sortTasks(taskList) {
   const sortedTasks = [...taskList];
 
-  if (currentSortMode === "deadline") {
+  if (currentSortMode === "newest") {
+    sortedTasks.sort(function (firstTask, secondTask) {
+      return getCreatedTime(secondTask) - getCreatedTime(firstTask);
+    });
+  }
+
+  if (currentSortMode === "oldest") {
+    sortedTasks.sort(function (firstTask, secondTask) {
+      return getCreatedTime(firstTask) - getCreatedTime(secondTask);
+    });
+  }
+
+  if (currentSortMode === "deadline-nearest") {
     sortedTasks.sort(function (firstTask, secondTask) {
       return getSortDeadlineValue(firstTask) - getSortDeadlineValue(secondTask);
     });
   }
 
-  if (currentSortMode === "priority") {
+  if (currentSortMode === "deadline-farthest") {
+    sortedTasks.sort(function (firstTask, secondTask) {
+      if (firstTask.dueDate === "" && secondTask.dueDate === "") {
+        return 0;
+      }
+
+      if (firstTask.dueDate === "") {
+        return 1;
+      }
+
+      if (secondTask.dueDate === "") {
+        return -1;
+      }
+
+      return getSortDeadlineValue(secondTask) - getSortDeadlineValue(firstTask);
+    });
+  }
+
+  if (currentSortMode === "priority-high") {
     sortedTasks.sort(function (firstTask, secondTask) {
       return getPriorityRank(secondTask.priority) - getPriorityRank(firstTask.priority);
+    });
+  }
+
+  if (currentSortMode === "priority-low") {
+    sortedTasks.sort(function (firstTask, secondTask) {
+      return getPriorityRank(firstTask.priority) - getPriorityRank(secondTask.priority);
     });
   }
 
@@ -737,6 +1061,10 @@ function sortTasks(taskList) {
   }
 
   return sortedTasks;
+}
+
+function getCreatedTime(task) {
+  return new Date(task.createdAt).getTime();
 }
 
 function getSortDeadlineValue(task) {
@@ -786,6 +1114,10 @@ function updateTaskCount() {
   const deadlineSoonTasks = tasks.filter(function (task) {
     return getDeadlineInfo(task).isUrgent;
   }).length;
+  const highPriorityTasks = tasks.filter(function (task) {
+    return task.priority === "high";
+  }).length;
+  const currentUser = getCurrentUser();
 
   document.querySelector("#task-count").textContent = `${pendingTasks} pending / ${completedTasks} completed`;
   document.querySelector("#total-count").textContent = totalTasks;
@@ -793,6 +1125,14 @@ function updateTaskCount() {
   document.querySelector("#completed-count").textContent = completedTasks;
   document.querySelector("#overdue-count").textContent = overdueTasks;
   document.querySelector("#deadline-soon-count").textContent = deadlineSoonTasks;
+  document.querySelector("#high-priority-count").textContent = highPriorityTasks;
+
+  document.querySelector("#profile-total-count").textContent = totalTasks;
+  document.querySelector("#profile-pending-count").textContent = pendingTasks;
+  document.querySelector("#profile-completed-count").textContent = completedTasks;
+  document.querySelector("#profile-created-date").textContent = currentUser && currentUser.createdAt
+    ? formatDate(currentUser.createdAt.slice(0, 10))
+    : "Not available";
 }
 
 function updateEmptyState(visibleTaskCount) {

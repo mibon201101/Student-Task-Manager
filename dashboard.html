@@ -16,9 +16,44 @@
           <p class="intro">Keep assignments, study sessions, and reminders organized in one simple list.</p>
         </div>
         <div class="user-controls">
+          <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Dark Mode</button>
           <p id="welcome-message">Welcome, Student</p>
           <button id="logout-btn" class="logout-btn" type="button">Logout</button>
         </div>
+      </section>
+
+      <section class="profile-panel" aria-labelledby="profile-title">
+        <div>
+          <p class="section-kicker">Profile</p>
+          <h2 id="profile-title">Student account</h2>
+          <p id="profile-email" class="profile-email">student@example.com</p>
+        </div>
+        <form id="profile-form" class="profile-form">
+          <label for="profile-name-input">Name</label>
+          <div class="profile-edit-row">
+            <input id="profile-name-input" type="text" autocomplete="name">
+            <button type="submit">Update Name</button>
+          </div>
+          <p id="profile-message" class="form-message" aria-live="polite"></p>
+        </form>
+        <dl class="profile-stats" aria-label="Profile task statistics">
+          <div>
+            <dt>Total Tasks</dt>
+            <dd id="profile-total-count">0</dd>
+          </div>
+          <div>
+            <dt>Completed</dt>
+            <dd id="profile-completed-count">0</dd>
+          </div>
+          <div>
+            <dt>Pending</dt>
+            <dd id="profile-pending-count">0</dd>
+          </div>
+          <div>
+            <dt>Account Created</dt>
+            <dd id="profile-created-date">Not available</dd>
+          </div>
+        </dl>
       </section>
 
       <section class="task-panel" aria-label="Task manager">
@@ -47,8 +82,14 @@
               type="date"
               aria-label="Due date"
             >
-            <button type="submit">Add Task</button>
+            <button id="task-submit-btn" type="submit">Add Task</button>
           </div>
+          <label class="notes-label" for="task-notes-input">Description / Notes (optional)</label>
+          <textarea
+            id="task-notes-input"
+            rows="3"
+            placeholder="Add extra details, links, chapter numbers, or reminders"
+          ></textarea>
           <p id="form-message" class="form-message" aria-live="polite"></p>
         </form>
 
@@ -73,6 +114,10 @@
             <span class="summary-label">Deadline Soon</span>
             <strong id="deadline-soon-count">0</strong>
           </div>
+          <div class="summary-item">
+            <span class="summary-label">High Priority</span>
+            <strong id="high-priority-count">0</strong>
+          </div>
         </div>
 
         <div class="dashboard-tools" aria-label="Search and sort tasks">
@@ -88,9 +133,12 @@
           <label for="task-sort">
             Sort
             <select id="task-sort">
-              <option value="default">Default order</option>
-              <option value="deadline">Deadline nearest first</option>
-              <option value="priority">Priority high to low</option>
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="deadline-nearest">Deadline nearest first</option>
+              <option value="deadline-farthest">Deadline farthest first</option>
+              <option value="priority-high">Priority high to low</option>
+              <option value="priority-low">Priority low to high</option>
               <option value="pending">Pending first</option>
               <option value="completed">Completed first</option>
             </select>
