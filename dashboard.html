@@ -65,20 +65,20 @@
           <p class="section-note">Based on your completed tasks.</p>
         </div>
 
-        <div class="progress-grid" aria-label="Student progress statistics">
-          <div class="summary-item">
+        <div class="progress-grid analytics-summary-grid" aria-label="Student progress statistics">
+          <div class="summary-item stat-card-orange">
             <span class="summary-label">Total Tasks</span>
             <strong id="progress-total">0</strong>
           </div>
-          <div class="summary-item">
+          <div class="summary-item stat-card-green">
             <span class="summary-label">Completed</span>
             <strong id="progress-completed">0</strong>
           </div>
-          <div class="summary-item">
+          <div class="summary-item stat-card-amber">
             <span class="summary-label">Pending</span>
             <strong id="progress-pending">0</strong>
           </div>
-          <div class="summary-item">
+          <div class="summary-item stat-card-red">
             <span class="summary-label">Overdue</span>
             <strong id="progress-overdue">0</strong>
           </div>
@@ -104,30 +104,72 @@
           </div>
         </div>
 
-        <div class="insight-grid">
-          <div class="insight-card">
-            <span>Most productive day</span>
-            <strong id="progress-productive-day">No completed tasks yet</strong>
+        <div class="analytics-visual-grid">
+          <div class="chart-card completion-chart-card">
+            <div class="chart-card-header">
+              <div>
+                <span class="chart-label">Completion split</span>
+                <h3>Task completion</h3>
+              </div>
+              <span id="completion-chart-caption" class="chart-caption">0 completed / 0 pending</span>
+            </div>
+            <div
+              id="completion-donut"
+              class="completion-donut"
+              style="--completed-slice: 0%;"
+              aria-label="0 percent completed"
+            >
+              <div class="donut-center">
+                <strong id="donut-rate">0%</strong>
+                <span>Completed</span>
+              </div>
+            </div>
+            <div class="chart-legend">
+              <span><i class="legend-completed"></i>Completed</span>
+              <span><i class="legend-pending"></i>Pending</span>
+            </div>
           </div>
-          <div class="insight-card">
-            <span>Most productive month</span>
-            <strong id="progress-productive-month">No completed tasks yet</strong>
-          </div>
-          <div class="insight-card">
-            <span>Most productive year</span>
-            <strong id="progress-productive-year">No completed tasks yet</strong>
-          </div>
-          <div class="insight-card">
-            <span>Top completed category</span>
-            <strong id="progress-top-category">No category progress yet</strong>
+
+          <div class="chart-card productivity-chart-card">
+            <div class="chart-card-header">
+              <div>
+                <span class="chart-label">Recent work</span>
+                <h3>Productivity</h3>
+              </div>
+            </div>
+            <div id="productivity-bars" class="productivity-bars" aria-label="Recent productivity bars">
+              <div class="productivity-bar-row">
+                <span>Today</span>
+                <div class="productivity-track"><div class="productivity-fill productivity-today" style="width: 0%;"></div></div>
+                <strong id="productivity-today-count">0</strong>
+              </div>
+              <div class="productivity-bar-row">
+                <span>This Week</span>
+                <div class="productivity-track"><div class="productivity-fill productivity-week" style="width: 0%;"></div></div>
+                <strong id="productivity-week-count">0</strong>
+              </div>
+              <div class="productivity-bar-row">
+                <span>This Month</span>
+                <div class="productivity-track"><div class="productivity-fill productivity-month" style="width: 0%;"></div></div>
+                <strong id="productivity-month-count">0</strong>
+              </div>
+            </div>
+            <p id="productivity-empty" class="chart-empty">No completed tasks yet</p>
           </div>
         </div>
 
-        <div class="category-progress">
-          <h3>Category progress</h3>
-          <ul id="category-progress-list">
-            <li>No category progress yet</li>
-          </ul>
+        <div class="analytics-bottom-grid">
+          <div class="chart-card category-chart-card">
+            <div class="chart-card-header">
+              <div>
+                <span class="chart-label">Completed by category</span>
+                <h3>Category progress</h3>
+              </div>
+            </div>
+            <div id="category-progress-list" class="category-bar-list">
+              <p class="chart-empty">No category progress yet</p>
+            </div>
+          </div>
         </div>
       </section>
 

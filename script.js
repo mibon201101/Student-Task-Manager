@@ -1116,12 +1116,62 @@ function updateStudentProgress() {
   setText("#progress-today", progress.completedToday);
   setText("#progress-week", progress.completedThisWeek);
   setText("#progress-month", progress.completedThisMonth);
-  setText("#progress-productive-day", progress.mostProductiveDay);
-  setText("#progress-productive-month", progress.mostProductiveMonth);
-  setText("#progress-productive-year", progress.mostProductiveYear);
   setText("#progress-high-priority-completed", progress.highPriorityCompleted);
-  setText("#progress-top-category", progress.topCategory);
+  setText("#donut-rate", `${progress.completionRate}%`);
+  setText("#completion-chart-caption", `${progress.stats.completed} completed / ${progress.stats.pending} pending`);
+  setText("#productivity-today-count", progress.completedToday);
+  setText("#productivity-week-count", progress.completedThisWeek);
+  setText("#productivity-month-count", progress.completedThisMonth);
 
+  updateCompletionDonut(progress);
+  updateProductivityBars(progress);
+  renderCategoryBars(progress);
+}
+
+function updateCompletionDonut(progress) {
+  const donut = document.querySelector("#completion-donut");
+
+  if (donut === null) {
+    return;
+  }
+
+  donut.style.setProperty("--completed-slice", `${progress.completionRate}%`);
+  donut.setAttribute("aria-label", `${progress.completionRate} percent completed`);
+}
+
+function updateProductivityBars(progress) {
+  const productivityValues = [
+    {
+      selector: ".productivity-today",
+      value: progress.completedToday
+    },
+    {
+      selector: ".productivity-week",
+      value: progress.completedThisWeek
+    },
+    {
+      selector: ".productivity-month",
+      value: progress.completedThisMonth
+    }
+  ];
+  const highestValue = Math.max(progress.completedToday, progress.completedThisWeek, progress.completedThisMonth);
+  const emptyMessage = document.querySelector("#productivity-empty");
+
+  productivityValues.forEach(function (item) {
+    const fill = document.querySelector(item.selector);
+    const width = highestValue === 0 ? 0 : Math.max(8, Math.round((item.value / highestValue) * 100));
+
+    if (fill !== null) {
+      fill.style.width = `${width}%`;
+    }
+  });
+
+  if (emptyMessage !== null) {
+    emptyMessage.classList.toggle("show", highestValue === 0);
+  }
+}
+
+function renderCategoryBars(progress) {
   const categoryList = document.querySelector("#category-progress-list");
 
   if (categoryList === null) {
@@ -1129,12 +1179,37 @@ function updateStudentProgress() {
   }
 
   if (progress.totalCategoryCompletions === 0) {
-    categoryList.innerHTML = "<li>No category progress yet</li>";
+    categoryList.innerHTML = "<p class=\"chart-empty show\">No category progress yet</p>";
     return;
   }
 
+  const highestCategoryCount = Math.max(
+    progress.categoryCounts.assignment,
+    progress.categoryCounts.homework,
+    progress.categoryCounts["study-session"],
+    progress.categoryCounts.project
+  );
+
   categoryList.innerHTML = CATEGORY_OPTIONS.map(function (category) {
-    return `<li><span>${formatCategory(category)}</span><strong>${progress.categoryCounts[category]} completed</strong></li>`;
+    const completedCount = progress.categoryCounts[category];
+    const percent = progress.totalCategoryCompletions === 0
+      ? 0
+      : Math.round((completedCount / progress.totalCategoryCompletions) * 100);
+    const width = highestCategoryCount === 0 ? 0 : Math.max(6, Math.round((completedCount / highestCategoryCount) * 100));
+    const isTopCategory = completedCount > 0 && completedCount === highestCategoryCount;
+
+    return `
+      <div class="category-bar-row ${isTopCategory ? "top-category" : ""}">
+        <div class="category-bar-label">
+          <span>${formatCategory(category)}</span>
+          <strong>${completedCount} completed</strong>
+        </div>
+        <div class="category-bar-track">
+          <div class="category-bar-fill category-${category}" style="width: ${width}%;"></div>
+        </div>
+        <span class="category-bar-percent">${percent}%</span>
+      </div>
+    `;
   }).join("");
 }
 

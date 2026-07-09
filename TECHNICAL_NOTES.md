@@ -232,12 +232,17 @@ The student dashboard uses `getStudentProgress()` to calculate:
 - Tasks completed today
 - Tasks completed this week
 - Tasks completed this month
-- Most productive day
-- Most productive month
-- Most productive year
 - High priority tasks completed
 - Category-wise completed task counts
 - Category with most completed tasks
+
+The same progress object also feeds the visual analytics panel:
+
+- Completion donut chart
+- Category progress bars
+- Today/week/month productivity bars
+
+Most productive day/month/year calculations are still available in the code for future analytics, but the dashboard does not render separate cards for them.
 
 ## Completion Rate Calculation
 
@@ -246,6 +251,65 @@ completionRate = Math.round((completedTasks / totalTasks) * 100)
 ```
 
 If there are no tasks, the completion rate is `0%`.
+
+## Completion Donut Chart
+
+The completion donut is a normal HTML element styled with CSS `conic-gradient`.
+
+JavaScript sets a CSS custom property:
+
+```js
+donut.style.setProperty("--completed-slice", `${progress.completionRate}%`);
+```
+
+CSS uses that percentage to paint the completed part of the donut:
+
+```css
+background: conic-gradient(
+  var(--success) var(--completed-slice),
+  var(--warning-soft) 0
+);
+```
+
+The center of the donut displays the completion rate, such as `65% Completed`. If there are no tasks, the rate stays `0%`.
+
+## Category Progress Bars
+
+Category progress uses completed tasks only.
+
+The app counts completed tasks in each category:
+
+```js
+assignment
+homework
+study-session
+project
+```
+
+Each category bar shows:
+
+- Category name
+- Completed count
+- Percentage of all category completions
+- Relative bar width compared with the category that has the highest completed count
+
+The top category gets a stronger border so it is visually clear. If there are no completed tasks, the panel shows:
+
+```text
+No category progress yet
+```
+
+## Today, Week, and Month Productivity Bars
+
+Productivity bars use tasks that have a valid `completedAt` timestamp.
+
+The app calculates:
+
+- Completed today: completed at or after the start of the current day
+- Completed this week: completed at or after the start of the current week
+- Completed this month: completed at or after the first day of the current month
+
+The highest of the three values becomes the full-width bar. The other bars scale relative to that value. If all values are `0`, an empty-state message appears.
 
 ## Most Productive Day, Month, and Year
 

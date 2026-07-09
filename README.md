@@ -18,6 +18,10 @@ A warm, responsive student task manager built with HTML, CSS, and vanilla JavaSc
 - Existing search bar preserved and expanded to search titles, notes, subtasks, category, and priority
 - Status filters, category filter, and sort dropdown
 - Student progress statistics with completion rate and productivity insights
+- Visual student progress analytics panel
+- Completion donut chart for completed vs pending tasks
+- Category progress bars for completed tasks by category
+- Productivity bar graph for tasks completed today, this week, and this month
 - Category-wise completed task progress
 - Admin summary cards across all student users
 - Admin user management: block, unblock, delete, and reset password
@@ -40,11 +44,12 @@ The student dashboard shows:
 
 - Total, completed, pending, and overdue tasks
 - Completion rate percentage
+- A CSS donut chart for completed vs pending tasks
+- Productivity bars for today, this week, and this month
 - Tasks completed today, this week, and this month
-- Most productive day, month, and year
 - High priority tasks completed
-- Category with most completed tasks
-- Category-wise completed task counts
+- Category-wise completed task counts as horizontal progress bars
+- Most productive day/month/year calculations are kept in code for future analytics, but the dashboard no longer shows separate cards for them.
 
 Completion statistics use the `completedAt` timestamp saved when a task is marked completed.
 
